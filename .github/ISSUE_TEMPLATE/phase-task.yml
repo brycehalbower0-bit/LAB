@@ -1,0 +1,24 @@
+name: Phase task
+description: Work item belonging to a roadmap phase
+labels: [phase-task]
+body:
+  - type: input
+    id: phase
+    attributes:
+      label: Roadmap phase
+      placeholder: e.g. Phase 2 — CI/CD, environments & IaC
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: What exactly this task delivers, tied to the phase's acceptance criteria.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+    validations:
+      required: true

@@ -5,17 +5,17 @@
 This is the most load-bearing document in the blueprint. It defines how Chronos
 represents knowledge: entities, historical time, assertions, geometry through time,
 relationships, revisions, and the snapshot read model. SQL below is illustrative
-schema *strategy*; exact DDL lands with each roadmap phase's migrations.
+schema _strategy_; exact DDL lands with each roadmap phase's migrations.
 
 ---
 
 ## 1. First Principles
 
 1. **The unit of knowledge is the assertion, not the row.** An assertion says:
-   *subject entity S has property/relationship P with value V, valid during
-   interval T (with precision/bounds), according to sources Σ, with confidence C.*
-2. **Bitemporality.** We track *valid time* (when it was true in history) and
-   *record time* (when our database said so — via the revision system). "What did
+   _subject entity S has property/relationship P with value V, valid during
+   interval T (with precision/bounds), according to sources Σ, with confidence C._
+2. **Bitemporality.** We track _valid time_ (when it was true in history) and
+   _record time_ (when our database said so — via the revision system). "What did
    Chronos claim about 1848 as of last March?" must be answerable.
 3. **Sources are entities.** Citations are first-class rows, joinable and reusable,
    never free-text afterthoughts.
@@ -55,18 +55,18 @@ CREATE TABLE core.entity (
 
 A `HistoricalDate` is a value type serialized into columns:
 
-| Field | Type | Meaning |
-|---|---|---|
-| `ordinal` | int64 | Julian Day Number of the date's midpoint anchor (astronomical numbering; supports deep prehistory) |
-| `precision` | enum | `day, month, season, year, decade, century, millennium, era` |
-| `earliest` | int64 NULL | Lower bound ordinal when the date itself is uncertain ("between 1235 and 1241") |
-| `latest` | int64 NULL | Upper bound ordinal |
-| `calendar` | enum | Calendar of record for display/scholarship: `gregorian, julian, islamic, ...` (ordinal is always calendar-independent) |
+| Field       | Type       | Meaning                                                                                                                |
+| ----------- | ---------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `ordinal`   | int64      | Julian Day Number of the date's midpoint anchor (astronomical numbering; supports deep prehistory)                     |
+| `precision` | enum       | `day, month, season, year, decade, century, millennium, era`                                                           |
+| `earliest`  | int64 NULL | Lower bound ordinal when the date itself is uncertain ("between 1235 and 1241")                                        |
+| `latest`    | int64 NULL | Upper bound ordinal                                                                                                    |
+| `calendar`  | enum       | Calendar of record for display/scholarship: `gregorian, julian, islamic, ...` (ordinal is always calendar-independent) |
 
 An **interval** `[start HistoricalDate, end HistoricalDate)` describes validity;
 `end = NULL` means "ongoing." For indexing, every interval also materializes an
 `int8range` column `valid_range` = `[start.earliest_effective, end.latest_effective)`
-with a GiST index — the *generous* range, so temporal queries never miss uncertain
+with a GiST index — the _generous_ range, so temporal queries never miss uncertain
 rows; precision-aware refinement happens in the query layer.
 
 Rules:
@@ -162,7 +162,7 @@ Principles:
   model (borders as arcs shared between neighbors) is a known future optimization
   (Epoch 8 candidate) — the schema isolates geometry behind `geometry_version` so
   the swap doesn't touch assertions.
-- Disputed/overlapping control is *expected*: overlapping `border_claim`s with
+- Disputed/overlapping control is _expected_: overlapping `border_claim`s with
   different `claim_kind`/`certainty` render as the atlas layer dictates.
 - Frontier zones (steppe empires, pre-modern "borders") are polygons with
   `certainty='frontier_zone'` and get gradient rendering, not crisp lines.
@@ -186,7 +186,7 @@ CREATE TABLE graph.edge (      -- assertion mixin (subject = src) +
 ```
 
 (*) Where a module owns a richer table (e.g., `polity.capital`), the graph edge is
-a *projection* maintained by the event bus — the module table is truth, the edge
+a _projection_ maintained by the event bus — the module table is truth, the edge
 makes it traversable. The relationship vocabulary is governed (additions require a
 curation-approved vocabulary revision) to prevent decades of synonym rot.
 
@@ -233,7 +233,7 @@ CREATE TABLE curation.revision_change (     -- the diff, structured
   old assertion (`retired_rev`) and inserts a replacement (`created_rev`). This
   yields record-time travel, diffs, and rollback (inverse revision) for free.
 - "As-of record time R" queries filter `created_rev <= R AND (retired_rev IS NULL
-  OR retired_rev > R)`.
+OR retired_rev > R)`.
 - Bulk imports are revisions too — a dataset drop is one revision with thousands of
   changes, reviewable and reversible as a unit.
 
@@ -258,7 +258,7 @@ dominate); 10⁸+ learning events.
   one; assertion tables partitioned only if/when measured (live-row partial
   indexes usually suffice).
 - **Live views:** each module exposes `*_live` views (`retired_rev IS NULL AND
-  primacy`) so application code reads simply and bitemporal complexity stays fenced.
+primacy`) so application code reads simply and bitemporal complexity stays fenced.
 - **Geometry weight:** full-resolution geometries never leave the database except
   into tile builds; APIs serve simplified variants via `gen_levels`.
 - **Read replicas** for GraphQL reads (Stage B); snapshot/tile/search stores absorb

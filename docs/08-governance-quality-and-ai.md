@@ -17,7 +17,7 @@ the engineering quality doctrine.
   naming policy, contested-topic policy, vocabulary changes).
 - **Neutrality & naming policy:** contested names/borders follow a written policy
   (display endonym+exonym, present competing claims as parallel assertions,
-  never adjudicate live geopolitical disputes — render them *as disputes*).
+  never adjudicate live geopolitical disputes — render them _as disputes_).
   The policy document is versioned in-repo and enforced in review.
 - **Every claim challengeable:** any user can flag an assertion; flags open
   curation issues; resolution is recorded and visible in the entity's history.
@@ -44,8 +44,8 @@ Rules:
 
 1. **One pipeline.** Staff, community, pipelines, and AI drafts all flow through
    propose → gate → review → canon. No exceptions, enforced at the DB role level.
-2. **The AI gate triages, humans decide.** The gate can *bounce* (mechanical
-   failures, missing citations, spam) and *annotate*; it can never approve into
+2. **The AI gate triages, humans decide.** The gate can _bounce_ (mechanical
+   failures, missing citations, spam) and _annotate_; it can never approve into
    canon. Gate verdicts are logged and auditable; false-bounce appeals go to humans.
 3. **Reputation tiers** (`new → established → trusted → reviewer`): earned by
    approved-edit track record per topic area; grants expedited queues, larger
@@ -63,15 +63,15 @@ Rules:
 
 ## 3. Roles & Permission Matrix
 
-| Capability | reader | learner | contributor | reviewer | editor | admin |
-|---|---|---|---|---|---|---|
-| Browse/search/map | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Quizzes/SRS/progress | | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Propose edits, flag claims | | | ✓ | ✓ | ✓ | ✓ |
-| Review/approve (unprotected) | | | | ✓ | ✓ | ✓ |
-| Approve protected topics, vocabulary, merges | | | | | ✓ | ✓ |
-| Bulk imports, rollback revisions | | | | | ✓ | ✓ |
-| User/role management, protection settings, system config | | | | | | ✓ |
+| Capability                                               | reader | learner | contributor | reviewer | editor | admin |
+| -------------------------------------------------------- | ------ | ------- | ----------- | -------- | ------ | ----- |
+| Browse/search/map                                        | ✓      | ✓       | ✓           | ✓        | ✓      | ✓     |
+| Quizzes/SRS/progress                                     |        | ✓       | ✓           | ✓        | ✓      | ✓     |
+| Propose edits, flag claims                               |        |         | ✓           | ✓        | ✓      | ✓     |
+| Review/approve (unprotected)                             |        |         |             | ✓        | ✓      | ✓     |
+| Approve protected topics, vocabulary, merges             |        |         |             |          | ✓      | ✓     |
+| Bulk imports, rollback revisions                         |        |         |             |          | ✓      | ✓     |
+| User/role management, protection settings, system config |        |         |             |          |        | ✓     |
 
 ## 4. The Admin System (curation tooling)
 
@@ -98,9 +98,9 @@ Built as roadmap phases (Epoch 7 primarily), web-only:
 
 ## 5. AI Policy (ADR-014 operationalized)
 
-AI may: run the validation gate (§2), draft summaries/tour text *into review*,
+AI may: run the validation gate (§2), draft summaries/tour text _into review_,
 suggest connections/quiz phrasing/distractors, detect inconsistencies and coverage
-gaps, translate *into review*, and answer NL search by **retrieving and citing
+gaps, translate _into review_, and answer NL search by **retrieving and citing
 canonical assertions only**.
 
 AI may never: write canon, approve proposals, invent facts, dates, borders, or
@@ -124,8 +124,8 @@ processed for validation only.
   snapshots, tile manifest), integration (curation pipeline end-to-end: propose →
   gate → approve → serving-plane invalidation), E2E smoke (instrument loads,
   scrub works, page renders, quiz answers record) on web and iOS.
-- **Regression fixtures:** canonical "known worlds" (e.g., *Mediterranean 117 CE*,
-  *Europe 1810*, *World 1938*, *World today*) — snapshot + tile + page output
+- **Regression fixtures:** canonical "known worlds" (e.g., _Mediterranean 117 CE_,
+  _Europe 1810_, _World 1938_, _World today_) — snapshot + tile + page output
   locked as golden files; any diff must be explained by a revision.
 - **Temporal integrity suite** (doc 04 §7) runs in CI on fixtures and nightly on
   production.
@@ -148,6 +148,6 @@ processed for validation only.
 - Serving-plane rebuilds are routine operations with dashboards (rebuild lag is a
   user-visible freshness metric).
 - Backups: continuous WAL archiving + daily snapshots + quarterly restore drills;
-  the canonical plane is the only thing that *must* survive anything.
+  the canonical plane is the only thing that _must_ survive anything.
 - Incident policy: user-facing wrongness (bad data shown as fact) is an incident,
   not just downtime; postmortems feed the integrity suite.

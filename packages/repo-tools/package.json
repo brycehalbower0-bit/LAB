@@ -1,0 +1,29 @@
+{
+  "name": "@chronos/repo-tools",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Repository tooling: module-boundary enforcement (doc 01 \u00a71) and future repo automation.",
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "exports": {
+    "./boundaries": "./dist/boundaries.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "lint": "eslint src --max-warnings 0",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "dependency-cruiser": "^16.8.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "@types/node": "^22.10.2",
+    "eslint": "^9.17.0",
+    "eslint-config-prettier": "^9.1.0",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.18.1",
+    "vitest": "^2.1.8"
+  }
+}

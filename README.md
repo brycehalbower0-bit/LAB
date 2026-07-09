@@ -22,31 +22,42 @@ knowledge base — one brain, two faces.
 
 ## Status
 
-**Current stage: Blueprint (pre-implementation).**
+**Current stage: Epoch 1 — Foundations (Phase 1 complete).**
 
-This repository currently contains the complete architectural blueprint and the
-100-phase implementation roadmap that governs all future work. Per the project
-charter, no significant code is written until the blueprint exists — and all
-implementation proceeds **one phase at a time, in order, never skipping ahead**.
+The complete architectural blueprint and 100-phase roadmap govern all work.
+Implementation proceeds **one phase at a time, in order, never skipping ahead**.
+Phase status lives in [docs/roadmap/](docs/roadmap/README.md).
+
+## Quickstart (development)
+
+```bash
+# Requirements: Node 22 (.nvmrc), pnpm 10 (corepack enable)
+pnpm install
+pnpm check     # lint + typecheck + tests + module-boundary checks (the merge bar)
+pnpm format    # prettier
+```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) and
+[docs/engineering-standards.md](docs/engineering-standards.md).
 
 ## The Blueprint
 
 Read in order. Every document is normative unless marked exploratory.
 
-| # | Document | Contents |
-|---|----------|----------|
-| 00 | [Vision & Principles](docs/00-vision-and-principles.md) | Product vision, core philosophy, non-goals, definitions of success |
-| 01 | [System Architecture](docs/01-system-architecture.md) | Module map, system diagrams, boundaries, runtime topology, evolution strategy |
-| 02 | [Technology Decisions](docs/02-technology-decisions.md) | ADR-style decisions: languages, databases, map stack, search, infra |
-| 03 | [Database & Temporal Model](docs/03-database-and-temporal-model.md) | The temporal core: entities, valid-time, uncertainty, geometry versioning, schema strategy |
-| 04 | [Data Acquisition & Provenance](docs/04-data-acquisition-and-provenance.md) | Source datasets, licensing, ingestion pipelines, citation & confidence model |
-| 05 | [API & Integration Design](docs/05-api-and-integration-design.md) | GraphQL/REST/tiles contracts, snapshot API, versioning, public API strategy |
-| 06 | [Frontend Experience](docs/06-frontend-experience.md) | Map, timeline, layers, entity pages, search UX, design system |
-| 07 | [Learning & Knowledge Systems](docs/07-learning-and-knowledge-systems.md) | Knowledge graph, quizzes, spaced repetition, challenges, analytics |
-| 08 | [Governance, Quality & AI Policy](docs/08-governance-quality-and-ai.md) | Editorial workflow, admin tools, versioning/rollback, AI assistance rules, testing doctrine |
-| — | [Roadmap](docs/roadmap/README.md) | 100 phases in 8 epochs, with objectives, acceptance criteria, dependencies, risks, estimates |
-| — | [Changelog](CHANGELOG.md) | Every meaningful change to the project, forever |
-| — | [Glossary](docs/GLOSSARY.md) | Canonical vocabulary used across all documents and code |
+| #   | Document                                                                    | Contents                                                                                     |
+| --- | --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| 00  | [Vision & Principles](docs/00-vision-and-principles.md)                     | Product vision, core philosophy, non-goals, definitions of success                           |
+| 01  | [System Architecture](docs/01-system-architecture.md)                       | Module map, system diagrams, boundaries, runtime topology, evolution strategy                |
+| 02  | [Technology Decisions](docs/02-technology-decisions.md)                     | ADR-style decisions: languages, databases, map stack, search, infra                          |
+| 03  | [Database & Temporal Model](docs/03-database-and-temporal-model.md)         | The temporal core: entities, valid-time, uncertainty, geometry versioning, schema strategy   |
+| 04  | [Data Acquisition & Provenance](docs/04-data-acquisition-and-provenance.md) | Source datasets, licensing, ingestion pipelines, citation & confidence model                 |
+| 05  | [API & Integration Design](docs/05-api-and-integration-design.md)           | GraphQL/REST/tiles contracts, snapshot API, versioning, public API strategy                  |
+| 06  | [Frontend Experience](docs/06-frontend-experience.md)                       | Map, timeline, layers, entity pages, search UX, design system                                |
+| 07  | [Learning & Knowledge Systems](docs/07-learning-and-knowledge-systems.md)   | Knowledge graph, quizzes, spaced repetition, challenges, analytics                           |
+| 08  | [Governance, Quality & AI Policy](docs/08-governance-quality-and-ai.md)     | Editorial workflow, admin tools, versioning/rollback, AI assistance rules, testing doctrine  |
+| —   | [Roadmap](docs/roadmap/README.md)                                           | 100 phases in 8 epochs, with objectives, acceptance criteria, dependencies, risks, estimates |
+| —   | [Changelog](CHANGELOG.md)                                                   | Every meaningful change to the project, forever                                              |
+| —   | [Glossary](docs/GLOSSARY.md)                                                | Canonical vocabulary used across all documents and code                                      |
 
 ## Operating Rules (non-negotiable)
 

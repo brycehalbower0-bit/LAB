@@ -10,15 +10,15 @@ future public consumers). Governing ADRs: ADR-009 (GraphQL+REST split), ADR-008
 
 ## 1. Surface Overview
 
-| Surface | Protocol | Consumers | Notes |
-|---|---|---|---|
-| Knowledge API | GraphQL | Web app, iOS app, admin, SSR layer | Primary read surface; persisted queries in production |
-| Tile API | REST (HTTP GET, immutable URLs) | Web + iOS map clients, CDN | `pbf` vector tiles, raster tiles for climate/terrain |
-| Learning API | GraphQL mutations + queries | Web app, iOS app | Sessions, answers, SRS scheduling; iOS syncs offline attempts |
-| Curation API | GraphQL mutations | Web app (public proposals), admin app, pipelines | Proposals, AI-gate results, reviews, imports, rollback |
-| Media API | REST | All | Images, historical maps, exports; signed upload for admin |
-| Public API v1 | REST (OpenAPI) | External developers | Epoch 8; keyed, quota'd, stable |
-| Webhooks/Events | HTTP push | Future integrators | Epoch 8 |
+| Surface         | Protocol                        | Consumers                                        | Notes                                                         |
+| --------------- | ------------------------------- | ------------------------------------------------ | ------------------------------------------------------------- |
+| Knowledge API   | GraphQL                         | Web app, iOS app, admin, SSR layer               | Primary read surface; persisted queries in production         |
+| Tile API        | REST (HTTP GET, immutable URLs) | Web + iOS map clients, CDN                       | `pbf` vector tiles, raster tiles for climate/terrain          |
+| Learning API    | GraphQL mutations + queries     | Web app, iOS app                                 | Sessions, answers, SRS scheduling; iOS syncs offline attempts |
+| Curation API    | GraphQL mutations               | Web app (public proposals), admin app, pipelines | Proposals, AI-gate results, reviews, imports, rollback        |
+| Media API       | REST                            | All                                              | Images, historical maps, exports; signed upload for admin     |
+| Public API v1   | REST (OpenAPI)                  | External developers                              | Epoch 8; keyed, quota'd, stable                               |
+| Webhooks/Events | HTTP push                       | Future integrators                               | Epoch 8                                                       |
 
 ## 2. GraphQL Design Principles
 
@@ -27,7 +27,7 @@ future public consumers). Governing ADRs: ADR-009 (GraphQL+REST split), ADR-008
    type Query {
      worldSnapshot(at: HistoricalDate!, region: RegionInput, layers: [LayerKey!]): WorldSnapshot!
      entity(id: ID!, at: HistoricalDate): Entity
-     polity(id: ID!): Polity            # full-history view
+     polity(id: ID!): Polity # full-history view
      place(id: ID!): Place
      search(q: String!, at: HistoricalDate, kinds: [EntityKind!], first: Int): SearchResults!
      timeline(focus: ID!, window: HistoricalInterval, resolution: TimeResolution): Timeline!
@@ -40,8 +40,12 @@ future public consumers). Governing ADRs: ADR-009 (GraphQL+REST split), ADR-008
    (`"1848"`, `"c. 750 BCE"`, `"1914-06-28"`) accepted on input.
 3. **Every fact-bearing field can expose its assertions.** Interfaces:
    ```graphql
-   interface Asserted { confidence: Int!, interpretation: Interpretation!,
-                        validTime: HistoricalInterval!, citations: [Citation!]! }
+   interface Asserted {
+     confidence: Int!
+     interpretation: Interpretation!
+     validTime: HistoricalInterval!
+     citations: [Citation!]!
+   }
    ```
    Page UIs read the plain value; the provenance popover queries the `Asserted`
    view. Alternatives: `assertionsFor(property: …) { … }` returns non-primary rows.
@@ -115,14 +119,14 @@ offense enforced by role separation at the DB level.
 
 ## 7. Performance Contracts (budgets, enforced by perf tests from Epoch 4)
 
-| Operation | Budget (p95) |
-|---|---|
-| Tile fetch (CDN hit) | < 50 ms |
-| Tile fetch (server render) | < 300 ms |
-| `worldSnapshot` (cache hit) | < 150 ms |
-| `worldSnapshot` (cold) | < 1.5 s |
-| Entity page query | < 300 ms |
-| Search-as-you-type | < 150 ms |
+| Operation                         | Budget (p95)       |
+| --------------------------------- | ------------------ |
+| Tile fetch (CDN hit)              | < 50 ms            |
+| Tile fetch (server render)        | < 300 ms           |
+| `worldSnapshot` (cache hit)       | < 150 ms           |
+| `worldSnapshot` (cold)            | < 1.5 s            |
+| Entity page query                 | < 300 ms           |
+| Search-as-you-type                | < 150 ms           |
 | Timeline scrub tile-swap (client) | < 100 ms perceived |
 
 ## 8. Error & Result Conventions

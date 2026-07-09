@@ -6,9 +6,26 @@ entries will track phases.
 
 ## [Unreleased]
 
+### Phase 1 — Project charter, monorepo & engineering standards (2026-07-09)
+
+- Monorepo established: pnpm workspaces + turborepo; strict TypeScript base
+  config; ESLint (flat config, type-checked) + Prettier; Node 22 pinned.
+- Module-boundary enforcement shipped (`@chronos/repo-tools`): dependency-cruiser
+  rules implementing doc 01 §1 (cross-module imports via `index` only; acyclic
+  graph; no cross-package `src/` reach-ins), with seeded-violation fixtures and a
+  self-test proving the rules can fail. Wired into `pnpm check`.
+- CI (GitHub Actions): format check + `pnpm check` on every PR and push to main.
+- Licenses added from canonical SPDX texts: AGPL-3.0-only (code, `LICENSE`),
+  CC BY-SA 4.0 (content, `LICENSE-CONTENT`) per ADR-013.
+- Contribution groundwork: CONTRIBUTING.md, engineering standards doc,
+  CLA draft (pending legal review), CODEOWNERS, issue templates, PR template
+  embedding the Definition of Done.
+- Directory charters for `/apps`, `/pipelines`, `/infra`, `/data`, `/ios`.
+
 ## [0.1.0] — 2026-07-09 · The Blueprint
 
 ### Added
+
 - Founding architectural blueprint (docs 00–08): vision & principles; system
   architecture (modular monolith, two data planes); technology decisions
   ADR-001…ADR-017; database & temporal model (assertion model, HistoricalDate,
@@ -24,6 +41,7 @@ entries will track phases.
 - This changelog.
 
 ### Decided
+
 - Platforms: web (reference client) + native iOS (ADR-016); Android deferred.
 - Contribution model: open, Wikipedia-style, AI-gated, human-approved (ADR-017).
 - System of record: PostgreSQL + PostGIS + pgvector; serving plane fully

@@ -17,42 +17,42 @@ Licenses must be re-verified at ingestion time — this table is the planning vi
 
 ### 1.1 Modern geography (the base of the stack)
 
-| Dataset | Content | License (verify) | Role |
-|---|---|---|---|
-| Natural Earth | Modern countries, admin-1, cities, physical features, multiple scales | Public domain | Base political/physical vectors; style development |
-| OpenStreetMap | Everything modern, high detail | ODbL | Modern detail layers (attribution + share-alike gates) |
-| geoBoundaries | Modern admin boundaries, versioned | CC BY 4.0 | Admin divisions |
-| GeoNames | Place names, hierarchy, coordinates | CC BY 4.0 | Gazetteer seeding, alternate names |
-| SRTM/GEBCO/ETOPO | Terrain & bathymetry | Public domain-ish | Terrain/physical basemap |
+| Dataset          | Content                                                               | License (verify)  | Role                                                   |
+| ---------------- | --------------------------------------------------------------------- | ----------------- | ------------------------------------------------------ |
+| Natural Earth    | Modern countries, admin-1, cities, physical features, multiple scales | Public domain     | Base political/physical vectors; style development     |
+| OpenStreetMap    | Everything modern, high detail                                        | ODbL              | Modern detail layers (attribution + share-alike gates) |
+| geoBoundaries    | Modern admin boundaries, versioned                                    | CC BY 4.0         | Admin divisions                                        |
+| GeoNames         | Place names, hierarchy, coordinates                                   | CC BY 4.0         | Gazetteer seeding, alternate names                     |
+| SRTM/GEBCO/ETOPO | Terrain & bathymetry                                                  | Public domain-ish | Terrain/physical basemap                               |
 
 ### 1.2 Historical borders & polities (the hard part)
 
-| Dataset | Content | License (verify) | Role |
-|---|---|---|---|
-| CShapes 2.0 | State borders & capitals 1886–2019, yearly | CC BY-NC-SA (research) — **license gate: likely reference-only; verify before any redistribution** | Gold standard for the statehood era |
-| Historical Basemaps (aourednik) | World political borders ~123,000 BCE–2010 (coarse) | GPL/CC — verify per file | Seed for pre-1886 world coverage; heavily curated afterward |
-| Euratlas | Europe political maps 1–2000 CE, century steps | **Commercial** | Candidate licensed acquisition for European accuracy |
-| Pleiades | Ancient Mediterranean places | CC BY | Ancient gazetteer backbone |
-| World Historical Gazetteer | Cross-period place linkage | CC BY | Entity reconciliation across periods |
-| Seshat / D-PLACE | Polity characteristics, social complexity | CC BY(-SA) variants | Polity attributes, government forms |
-| OpenHistoricalMap | Crowd-sourced historical features | ODbL-like | Growing detail source; also a community ally |
-| National HGIS projects (e.g., China CHGIS, US Atlas of Historical County Boundaries, Vision of Britain) | Deep regional admin history | Varies | Regional deep-dives in later epochs |
+| Dataset                                                                                                 | Content                                            | License (verify)                                                                                   | Role                                                        |
+| ------------------------------------------------------------------------------------------------------- | -------------------------------------------------- | -------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| CShapes 2.0                                                                                             | State borders & capitals 1886–2019, yearly         | CC BY-NC-SA (research) — **license gate: likely reference-only; verify before any redistribution** | Gold standard for the statehood era                         |
+| Historical Basemaps (aourednik)                                                                         | World political borders ~123,000 BCE–2010 (coarse) | GPL/CC — verify per file                                                                           | Seed for pre-1886 world coverage; heavily curated afterward |
+| Euratlas                                                                                                | Europe political maps 1–2000 CE, century steps     | **Commercial**                                                                                     | Candidate licensed acquisition for European accuracy        |
+| Pleiades                                                                                                | Ancient Mediterranean places                       | CC BY                                                                                              | Ancient gazetteer backbone                                  |
+| World Historical Gazetteer                                                                              | Cross-period place linkage                         | CC BY                                                                                              | Entity reconciliation across periods                        |
+| Seshat / D-PLACE                                                                                        | Polity characteristics, social complexity          | CC BY(-SA) variants                                                                                | Polity attributes, government forms                         |
+| OpenHistoricalMap                                                                                       | Crowd-sourced historical features                  | ODbL-like                                                                                          | Growing detail source; also a community ally                |
+| National HGIS projects (e.g., China CHGIS, US Atlas of Historical County Boundaries, Vision of Britain) | Deep regional admin history                        | Varies                                                                                             | Regional deep-dives in later epochs                         |
 
 ### 1.3 Entities, events, people, culture
 
-| Dataset | Content | License | Role |
-|---|---|---|---|
-| Wikidata | Entities, dates, relationships, external IDs, multilingual labels | CC0 | Primary graph seed: polities, people, events, offices, cities |
-| Wikipedia / DBpedia | Narrative text, infoboxes | CC BY-SA | Summaries (attributed), link mining — never blind copy |
-| Wikimedia Commons | Historical maps, photos, flags | Varies per file | Media library with per-item license records |
-| Pantheon (MIT) | Notable people, fame metrics | CC BY | Person seeding, importance scoring input |
-| Correlates of War / UCDP | Wars, participants, casualties (1816+ / 1946+) | Free for research — verify redistribution | War/battle data for modern era |
-| Ruler/leader compilations (e.g., Rulers.org-style, Wikidata `P6` chains) | Heads of state/government | Varies; Wikidata preferred | Leadership timelines |
-| HYDE 3.x | Gridded historical population/land use 10,000 BCE–present | CC BY | Population layers & estimates |
-| Reba–Reitsma–Seto historical urban population | City populations 3700 BCE–2000 CE | CC BY | City population curves |
-| Maddison Project | Historical GDP/economy | CC BY | Economic layers |
-| Glottolog / Ethnologue-alternatives | Languages | CC BY (Glottolog) | Language entities & distribution |
-| PaleoClim / paleoclimate reconstructions | Climate layers | Varies | Climate/biome layers (raster) |
+| Dataset                                                                  | Content                                                           | License                                   | Role                                                          |
+| ------------------------------------------------------------------------ | ----------------------------------------------------------------- | ----------------------------------------- | ------------------------------------------------------------- |
+| Wikidata                                                                 | Entities, dates, relationships, external IDs, multilingual labels | CC0                                       | Primary graph seed: polities, people, events, offices, cities |
+| Wikipedia / DBpedia                                                      | Narrative text, infoboxes                                         | CC BY-SA                                  | Summaries (attributed), link mining — never blind copy        |
+| Wikimedia Commons                                                        | Historical maps, photos, flags                                    | Varies per file                           | Media library with per-item license records                   |
+| Pantheon (MIT)                                                           | Notable people, fame metrics                                      | CC BY                                     | Person seeding, importance scoring input                      |
+| Correlates of War / UCDP                                                 | Wars, participants, casualties (1816+ / 1946+)                    | Free for research — verify redistribution | War/battle data for modern era                                |
+| Ruler/leader compilations (e.g., Rulers.org-style, Wikidata `P6` chains) | Heads of state/government                                         | Varies; Wikidata preferred                | Leadership timelines                                          |
+| HYDE 3.x                                                                 | Gridded historical population/land use 10,000 BCE–present         | CC BY                                     | Population layers & estimates                                 |
+| Reba–Reitsma–Seto historical urban population                            | City populations 3700 BCE–2000 CE                                 | CC BY                                     | City population curves                                        |
+| Maddison Project                                                         | Historical GDP/economy                                            | CC BY                                     | Economic layers                                               |
+| Glottolog / Ethnologue-alternatives                                      | Languages                                                         | CC BY (Glottolog)                         | Language entities & distribution                              |
+| PaleoClim / paleoclimate reconstructions                                 | Climate layers                                                    | Varies                                    | Climate/biome layers (raster)                                 |
 
 ### 1.4 Explicitly rejected until licensed
 
@@ -65,7 +65,7 @@ don't re-litigate.
 The roadmap (Epochs 2–5) sequences ingestion to maximize coherence:
 
 1. **Modern baseline first** (Natural Earth + geoBoundaries + GeoNames): a complete,
-   correct *today* — the reference frame every historical layer diffs against.
+   correct _today_ — the reference frame every historical layer diffs against.
 2. **Statehood era backward** (CShapes-informed 1886–present, then 1815–1886
    curated): yearly resolution where sources support it.
 3. **Wikidata graph seed**: polities, people, events, offices with dates and
@@ -136,16 +136,16 @@ queue is a living admin artifact (Epoch 7 tooling); early hard-coded priorities:
 Every assertion carries citations (doc 03 §4); every citation names a source
 entity; every source entity records reliability class:
 
-| Class | Examples | Default confidence ceiling |
-|---|---|---|
-| A — scholarly/primary-derived | Academic HGIS, peer-reviewed compilations, treaties | 100 |
-| B — curated tertiary | Wikidata (referenced statements), national statistical series | 85 |
-| C — community/crowd | OSM, OpenHistoricalMap, unreferenced Wikidata | 70 |
-| D — traditional/legendary | Founding myths, traditional dates | stored as `interpretation='traditional'` |
+| Class                         | Examples                                                      | Default confidence ceiling               |
+| ----------------------------- | ------------------------------------------------------------- | ---------------------------------------- |
+| A — scholarly/primary-derived | Academic HGIS, peer-reviewed compilations, treaties           | 100                                      |
+| B — curated tertiary          | Wikidata (referenced statements), national statistical series | 85                                       |
+| C — community/crowd           | OSM, OpenHistoricalMap, unreferenced Wikidata                 | 70                                       |
+| D — traditional/legendary     | Founding myths, traditional dates                             | stored as `interpretation='traditional'` |
 
 Rules: an assertion's confidence starts at min(source ceilings) and moves only via
 editorial review; conflicting sources create parallel assertions (never silent
-averaging); derived values (e.g., interpolated population) cite their inputs *and*
+averaging); derived values (e.g., interpolated population) cite their inputs _and_
 method, flagged `method='derived'`.
 
 ## 7. Data Quality Doctrine
@@ -153,7 +153,7 @@ method, flagged `method='derived'`.
 - **Temporal integrity checks** (continuous, in CI against fixtures and nightly
   against production): no polity with overlapping `primacy` existence assertions;
   no capital assertion outside its polity's existence; no leader in office outside
-  their lifespan (flag, don't auto-delete — sometimes the *lifespan* is wrong);
+  their lifespan (flag, don't auto-delete — sometimes the _lifespan_ is wrong);
   border claims must intersect their polity's era.
 - **Geometry checks**: validity, winding, no accidental slivers between neighbors
   beyond tolerance, generalization variants present.

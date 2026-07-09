@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.turbo/
+pnpm-lock.yaml
+LICENSE
+LICENSE-CONTENT
+coverage/

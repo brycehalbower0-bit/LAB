@@ -44,7 +44,7 @@ parts:
 3. Timeline zoom = temporal resolution: zoomed out you scrub centuries, zoomed in
    years/months — but never finer than the data supports for the visible region
    (the timeline visually "quantizes" in low-resolution periods and shows why).
-4. Scrubbing is *alive*: borders morph (crossfade between adjacent time buckets),
+4. Scrubbing is _alive_: borders morph (crossfade between adjacent time buckets),
    cities appear/fade, event markers pulse at their moments. Target: 60fps scrub
    with ≤100ms perceived tile-swap (doc 05 §7).
 5. Uncertainty is rendered: frontier zones as gradients, conjectural borders
@@ -72,14 +72,14 @@ One page architecture for all kinds — a **temporal dossier**:
 - **Mini-timeline ribbon:** the entity's own life across time; clicking moves the
   global T and every fact on the page re-anchors ("Paris in 1420" vs "Paris today").
 - **Fact panels (kind-specific):**
-  - *Polity:* government, leaders (timeline), capitals (timeline), territory
+  - _Polity:_ government, leaders (timeline), capitals (timeline), territory
     evolution (small-multiple maps per era), population, currencies, flags, wars,
     treaties, admin divisions, largest cities.
-  - *Place/City:* founding, historical names, ownership chain (which polity, when),
+  - _Place/City:_ founding, historical names, ownership chain (which polity, when),
     population curve, major events here, notable buildings, transport links, media.
-  - *Person:* life dates, roles/offices (timelines), affiliations, movements-map,
+  - _Person:_ life dates, roles/offices (timelines), affiliations, movements-map,
     works, relationships.
-  - *Event/War/Treaty:* when/where (map viz), participants, causes → consequences
+  - _Event/War/Treaty:_ when/where (map viz), participants, causes → consequences
     chains, order-of-battle where known, sources & historiography.
 - **Connections:** knowledge-graph neighborhood ("related people, places, events,
   ideas"), each edge dated and typed.
@@ -117,7 +117,7 @@ results first, with a "in other eras" section.
 - Every page and map feature: **Suggest an edit**. Guided, structured editors —
   "correct this date" (with HistoricalDate precision picker), "add an event",
   "add a source", "redraw this border segment" (web map editor with snapping and
-  era context; iOS submits geometry *annotations*, full border drawing is web-only).
+  era context; iOS submits geometry _annotations_, full border drawing is web-only).
 - Proposal composer always requires: the claim (structured), validity interval,
   sources, rationale. The AI gate's feedback renders inline (missing citation,
   conflict with existing assertion X — "did you mean to dispute it?").
@@ -159,5 +159,5 @@ results first, with a "in other eras" section.
 Initial interactive < 3s on median hardware; timeline scrub 60fps; tile-swap
 < 100ms perceived; every interactive element reachable in ≤3 interactions from
 the instrument; zero dead-end pages (every page links onward into the graph);
-error states always render *something* (cached snapshot, retry affordance) — the
+error states always render _something_ (cached snapshot, retry affordance) — the
 map never goes blank.

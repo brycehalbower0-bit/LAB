@@ -1,0 +1,7 @@
+packages:
+  - packages/*
+  - apps/*
+
+# Build scripts allowed to run on install (pnpm 10 security default: deny-all).
+onlyBuiltDependencies:
+  - esbuild

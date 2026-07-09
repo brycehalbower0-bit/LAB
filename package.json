@@ -1,0 +1,30 @@
+{
+  "name": "chronos",
+  "private": true,
+  "description": "Project Chronos — the definitive interactive history of Earth. Monorepo root.",
+  "license": "AGPL-3.0-only",
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "check": "turbo run lint typecheck test && pnpm run check:boundaries",
+    "check:boundaries": "node packages/repo-tools/dist/boundaries.js check && node packages/repo-tools/dist/boundaries.js selftest",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "dependency-cruiser": "^16.8.0",
+    "eslint": "^9.17.0",
+    "eslint-config-prettier": "^9.1.0",
+    "prettier": "^3.4.2",
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.18.1"
+  }
+}

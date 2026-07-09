@@ -17,16 +17,16 @@ Storage is defined in doc 03 §6; this section defines meaning and use.
 Initial controlled vocabulary (extension requires a curation-approved vocabulary
 revision — ADR-017 path):
 
-| Family | Relations (dated, directed, sourced) |
-|---|---|
-| Structure | `part_of`, `member_of`, `successor_of`, `predecessor_of`, `vassal_of`, `colony_of` |
-| Governance | `ruled` (person→polity, office-qualified), `capital_of` (place→polity) |
-| Conflict | `fought_in`, `at_war_with`, `allied_with`, `besieged`, `won`, `lost` |
-| Diplomacy | `signed` (polity/person→treaty), `party_to`, `ceded` / `acquired` (territory-qualified) |
-| Causality | `caused`, `contributed_to`, `resulted_from`, `enabled` — always with rationale + sources; causality claims default `interpretation='disputed'` unless strongly sourced |
-| Space | `located_in`, `flows_through`, `borders` |
-| Culture & ideas | `influenced`, `practiced_in`, `spoken_in`, `spread_to`, `founded`, `authored`, `invented`, `discovered` |
-| People | `parent_of`, `married_to`, `taught`, `served_under` |
+| Family          | Relations (dated, directed, sourced)                                                                                                                                   |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Structure       | `part_of`, `member_of`, `successor_of`, `predecessor_of`, `vassal_of`, `colony_of`                                                                                     |
+| Governance      | `ruled` (person→polity, office-qualified), `capital_of` (place→polity)                                                                                                 |
+| Conflict        | `fought_in`, `at_war_with`, `allied_with`, `besieged`, `won`, `lost`                                                                                                   |
+| Diplomacy       | `signed` (polity/person→treaty), `party_to`, `ceded` / `acquired` (territory-qualified)                                                                                |
+| Causality       | `caused`, `contributed_to`, `resulted_from`, `enabled` — always with rationale + sources; causality claims default `interpretation='disputed'` unless strongly sourced |
+| Space           | `located_in`, `flows_through`, `borders`                                                                                                                               |
+| Culture & ideas | `influenced`, `practiced_in`, `spoken_in`, `spread_to`, `founded`, `authored`, `invented`, `discovered`                                                                |
+| People          | `parent_of`, `married_to`, `taught`, `served_under`                                                                                                                    |
 
 ### 1.2 Graph products (read models)
 
@@ -52,15 +52,15 @@ the encyclopedia (doc 00 §4).
 
 ### 2.2 Item families
 
-| Family | Examples |
-|---|---|
-| Locate | Click country/city/river/mountain on the map **at time T**; GeoGuessr-style "where is this historical view?" |
-| Identify | Flag→country (era-aware: flags change!), capital→polity, leader portrait→name |
-| Temporal | Order events; place event on timeline; "which came first?"; duration estimates |
-| Relational | Who fought whom; which treaty ended which war; successor states |
-| Quantitative | Population/area comparisons at T (ranges respected — no false-precision answers) |
-| Cartographic | Which border is correct for year Y (drawn options); match map→era |
-| Narrative | Cause/consequence multiple choice (only from strongly-sourced causal edges) |
+| Family       | Examples                                                                                                     |
+| ------------ | ------------------------------------------------------------------------------------------------------------ |
+| Locate       | Click country/city/river/mountain on the map **at time T**; GeoGuessr-style "where is this historical view?" |
+| Identify     | Flag→country (era-aware: flags change!), capital→polity, leader portrait→name                                |
+| Temporal     | Order events; place event on timeline; "which came first?"; duration estimates                               |
+| Relational   | Who fought whom; which treaty ended which war; successor states                                              |
+| Quantitative | Population/area comparisons at T (ranges respected — no false-precision answers)                             |
+| Cartographic | Which border is correct for year Y (drawn options); match map→era                                            |
+| Narrative    | Cause/consequence multiple choice (only from strongly-sourced causal edges)                                  |
 
 Generation pipeline: template engine over canonical queries → AI-assist may
 propose phrasing variants and plausible distractors → **all items pass the same

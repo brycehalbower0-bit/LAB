@@ -8,6 +8,7 @@ contribution beta running through propose → AI gate → human review → canon
 ---
 
 ### Phase 78 — Admin review workbench — `PLANNED`
+
 **Objective.** The reviewer's home (doc 08 §4): queues, structured diff viewer, approve/request-changes/reject flows, batch review for imports — replacing the internal CLI-era workflow.
 **Requirements.** `/admin` route-space (web-only, role-gated); queue views with filtering/routing metadata; structured assertion diffs (before/after with HistoricalDate-aware rendering); reviewer comment threads; batch operations for bulk-import revisions; full audit surfacing.
 **Acceptance.** A staff reviewer processes a mixed queue (single edits + an import batch) entirely in UI; every action lands in audit log; review latency instrumented.
@@ -19,6 +20,7 @@ contribution beta running through propose → AI gate → human review → canon
 **Estimate.** 2.5 weeks.
 
 ### Phase 79 — Map & border editor (admin) — `PLANNED`
+
 **Objective.** Geometry editing for curators: draw/adjust border segments with era context, snapping to existing geometry versions, certainty assignment, cross-time preview (doc 08 §4).
 **Requirements.** Web map editor (draw/edit tooling over MapLibre); snapping + topology warnings (sliver detection live); era context layers (neighboring claims at T); output = geometry version + border-claim proposal through the standard pipeline; affected-bucket preview ("this edit changes tiles for 1878–1885").
 **Acceptance.** A curator corrects a fixture border, previews affected years, submits; approval rebuilds exactly the previewed buckets; topology warnings fire on seeded errors.
@@ -29,6 +31,7 @@ contribution beta running through propose → AI gate → human review → canon
 **Estimate.** 3 weeks.
 
 ### Phase 80 — Timeline editor, source manager & citation tooling — `PLANNED`
+
 **Objective.** Curator tools for time and provenance: validity-interval editing with conflict visualization, source registry management, citation reuse search (doc 08 §4).
 **Requirements.** Timeline editor (drag interval bounds with precision picker; overlapping-primacy conflicts highlighted live); source registry CRUD with reliability class + license gates; citation search ("cite this source again"); locator helpers.
 **Acceptance.** Curator fixes a wrong reign interval seeing conflicts resolve live; adds a new source with license record; reuses it across assertions.
@@ -40,6 +43,7 @@ contribution beta running through propose → AI gate → human review → canon
 **Estimate.** 2 weeks.
 
 ### Phase 81 — Version history UX, diff & rollback — `PLANNED`
+
 **Objective.** Public-facing history: every entity's revision history tab, human-readable diffs between any two revisions, admin rollback flows (single revision, contributor set), record-time browsing ("Chronos as of last March").
 **Requirements.** History UI on all dossiers (public read); diff rendering incl. map-visual diffs for geometry; rollback with mandatory reason through curation path; as-of-revision read mode (bitemporal query surface, doc 03 §8).
 **Acceptance.** Any entity's history browsable publicly with attributions; geometry diff renders side-by-side maps; rollback restores exactly (existing P7 tests extended to UI); as-of mode renders a past state with a banner.
@@ -51,6 +55,7 @@ contribution beta running through propose → AI gate → human review → canon
 **Estimate.** 2 weeks.
 
 ### Phase 82 — AI-assist foundation — `PLANNED`
+
 **Objective.** The `ai-assist` module proper (ADR-014): provider abstraction (Anthropic first), prompt/config versioning, full audit logging (prompt, model, retrieved context, output hash), evaluation harness, cost/rate governance; absorb the P49 retrieval harness.
 **Requirements.** Provider client abstraction; task registry (each AI task = versioned config + eval set + rollout gate); retrieval-grounding utilities over canon; generation labeling plumbing (`generated — pending review` metadata end-to-end); eval harness in CI for pinned configs.
 **Acceptance.** P49 NL answering runs through the new foundation with identical eval results; a config change requires passing its eval gate; audit queries reconstruct any AI interaction.
@@ -62,6 +67,7 @@ contribution beta running through propose → AI gate → human review → canon
 **Estimate.** 2 weeks.
 
 ### Phase 83 — AI validation gate v1 — `PLANNED`
+
 **Objective.** The automatic pre-review analysis of every proposal (doc 08 §2): mechanical+temporal+geometric consistency vs canon (reusing P37 integrity checks), citation/source verification, duplicate/conflict detection, spam/vandalism scoring, structured review briefs; bounce-with-reasons path.
 **Requirements.** Gate pipeline on proposal submission (async, SLA'd); brief schema (findings, conflicts with existing assertions, suggested duplicates, risk score, checklist for reviewer); bounce rules (mechanical failures only — judgment calls always go to humans); precision/recall measurement against reviewer outcomes from day one; appeal path.
 **Acceptance.** Seeded proposal suite (good, uncited, conflicting, duplicate, vandalistic) routes correctly; briefs render in workbench; gate metrics dashboard live; humans can override every gate outcome.
@@ -72,6 +78,7 @@ contribution beta running through propose → AI gate → human review → canon
 **Estimate.** 2.5 weeks.
 
 ### Phase 84 — Public contribution v1: facts, dates, events & sources — `PLANNED`
+
 **Objective.** Open structured contribution to registered users (contributor role): guided proposal composers — correct-a-date (precision picker), add-an-event, add-a-source/citation, fix-a-name, flag-a-claim (doc 06 §6) — through gate and review.
 **Requirements.** Composer UX with inline gate feedback (missing citation, conflict prompts "dispute instead?"); My Contributions dashboard (statuses, reviewer comments, credit); review routing by topic/tier; review-latency SLO instrumented (roadmap standing risk 4); contributor onboarding content.
 **Acceptance.** An external tester submits a real correction end-to-end to canon with credit visible in history; bounce and request-changes loops work; SLO dashboard live.
@@ -82,7 +89,8 @@ contribution beta running through propose → AI gate → human review → canon
 **Estimate.** 2.5 weeks.
 
 ### Phase 85 — Public contribution v2: geometry & map edits — `PLANNED`
-**Objective.** Community border/geometry proposals: simplified web border-suggestion editor (segment corrections with era context), place-location fixes, front-line/route suggestions; iOS geometry *annotations* (flag + describe, doc 06 §6).
+
+**Objective.** Community border/geometry proposals: simplified web border-suggestion editor (segment corrections with era context), place-location fixes, front-line/route suggestions; iOS geometry _annotations_ (flag + describe, doc 06 §6).
 **Requirements.** Contributor-grade editor (P79 machinery, guarded scope); geometry proposals get map-visual diffs in review automatically; certainty-class suggestions validated by gate geometry checks.
 **Acceptance.** A community tester proposes a border segment correction with sources; reviewer sees visual diff + gate brief; approval rebuilds correct buckets.
 **DB.** — **API.** Geometry proposal support. **Frontend.** Contributor editor; iOS annotation flow.
@@ -92,6 +100,7 @@ contribution beta running through propose → AI gate → human review → canon
 **Estimate.** 2 weeks.
 
 ### Phase 86 — Reputation, protection & moderation — `PLANNED`
+
 **Objective.** The trust system (doc 08 §2): reputation tiers (new→established→trusted→reviewer) earned per topic area; protection levels (open/elevated/protected); moderation tooling (flags queue, reports, tier management, contributor-set rollback).
 **Requirements.** Tier computation from review outcomes (transparent rules, logged transitions); protection settings per entity/region-period enforced in routing; community-reviewer promotion flow (staff-approved); anti-abuse: rate limits by tier, sockpuppet signals, mass-rollback tooling.
 **Acceptance.** Simulated contributor history earns/loses tiers per rules; protected fixture topics route to senior editors only; moderation E2E (flag→triage→action→audit) works; mass rollback of a bad actor's set verified.
@@ -102,6 +111,7 @@ contribution beta running through propose → AI gate → human review → canon
 **Estimate.** 2.5 weeks.
 
 ### Phase 87 — AI drafting & quiz phrasing (into review) — `PLANNED`
+
 **Objective.** AI as drafter (ADR-014 scope): educational summaries for entity pages, tour narration drafts, quiz phrasing variants and distractor suggestions — all grounded in canon, all into review queues, all labeled.
 **Requirements.** Drafting tasks in the P82 registry (grounding: the entity's assertions + citations only; hard schema: every claim in a draft must map to an assertion ID or be flagged decorative); reviewer diff-against-sources UI; item-phrasing pipeline into P64 lifecycle; generation-label rendering wherever drafts appear pre-approval.
 **Acceptance.** Draft summaries for 50 fixture entities reviewed: zero unmapped factual claims slip the schema check (automated) ; approved summaries render without generation label, rejected ones never surface; quiz phrasing variants measurably pass review at ≥70% (tuning target).
@@ -112,8 +122,9 @@ contribution beta running through propose → AI gate → human review → canon
 **Estimate.** 2 weeks.
 
 ### Phase 88 — Inconsistency detection, gap analysis & prioritization queue — `PLANNED`
+
 **Objective.** AI + heuristics hunting canon problems: contradiction candidates (dates, overlaps, orphaned references), coverage gaps vs the region-period model, source-weakness reports; the living prioritization queue (doc 04 §5) as an admin artifact.
-**Requirements.** Detection tasks (integrity-suite escalations + LLM-assisted candidate finding over assertion clusters) filing curation *issues* (never edits); coverage dashboards finalized (doc 04 §7); prioritization queue UI with scoring inputs editable by editors.
+**Requirements.** Detection tasks (integrity-suite escalations + LLM-assisted candidate finding over assertion clusters) filing curation _issues_ (never edits); coverage dashboards finalized (doc 04 §7); prioritization queue UI with scoring inputs editable by editors.
 **Acceptance.** Seeded contradictions surface as issues with useful context; coverage dashboard matches sampled manual audit; the queue drives the next curation sprint's plan (process documented).
 **DB.** Issue/queue tables. **API.** Issue queries. **Frontend.** Dashboards + queue console.
 **Testing.** Detection precision measured on seeded suite.
@@ -122,6 +133,7 @@ contribution beta running through propose → AI gate → human review → canon
 **Estimate.** 2 weeks.
 
 ### Phase 89 — Epoch 7 review & contribution beta — `PLANNED`
+
 **Objective.** Audit; open the invited contribution beta (community cohort, e.g., history-education and OpenHistoricalMap communities); measure the funnel (proposal→gate→review→canon rates, latency SLOs); tune; publish the trust & safety and editorial policies.
 **Acceptance.** ≥4 weeks of beta data; SLOs met or re-planned; gate precision/recall reported; policies published; report merged; Epoch 8 re-scoped; phases DONE-stamped.
 **Depends on.** P78–P88. **Estimate.** 2 weeks (plus concurrent beta runtime).

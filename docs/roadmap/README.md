@@ -16,20 +16,20 @@ Estimates assume a small core team (2–4 engineers plus heavy AI-assisted
 development) working sequentially. At the median ~2 weeks/phase this plan spans
 roughly **4–5 years** — consistent with the charter's horizon. Estimates are
 planning signals, not promises; they are revised at every epoch review. If the
-team grows, *phases stay sequential* but their internal work parallelizes.
+team grows, _phases stay sequential_ but their internal work parallelizes.
 
 ## The Epochs
 
-| Epoch | Phases | Theme | Exit state (what a user could do) |
-|---|---|---|---|
-| [1 — Foundations](epoch-1-foundations.md) | 1–12 | Repo, infra, temporal bedrock, curation kernel, app skeletons | Nothing public; the machine that builds the machine exists |
-| [2 — Temporal & Geographic Core](epoch-2-temporal-geographic-core.md) | 13–25 | Gazetteer, modern baseline world, map+timeline instrument v1, snapshots v1 | Explore a complete, sourced map of *today*; open place pages; search |
-| [3 — Political World Through Time](epoch-3-political-world-through-time.md) | 26–38 | Polities, borders through time (1815→present first), time-parameterized tiles | **Scrub the timeline and watch borders change**; country pages with leaders/capitals |
-| [4 — Events, People & Knowledge Graph](epoch-4-events-people-knowledge-graph.md) | 39–51 | Events, wars, treaties, people, graph, real search, SSR pages | Click any year: wars, leaders, births, deaths; everything cross-linked |
-| [5 — Depth: Cities, Culture & Layers](epoch-5-depth-cities-culture-layers.md) | 52–63 | City depth, deep-time coarse world, religion/language/trade/climate layers | Explore antiquity honestly; combine thematic layers; city dossiers |
-| [6 — Learning Platform & iOS](epoch-6-learning-platform-and-ios.md) | 64–77 | Quiz engine, FSRS, challenges, mastery; the native iOS app | Learn with SRS on web; carry Chronos on iPhone, offline packs, widgets |
-| [7 — Contribution, Curation & AI](epoch-7-contribution-curation-ai.md) | 78–89 | Admin tooling, AI validation gate, **public Wikipedia-style contribution** | Anyone proposes edits; AI gates; staff/community reviewers approve into canon |
-| [8 — Scale, Openness & Launch](epoch-8-scale-openness-launch.md) | 90–100 | Performance, i18n, a11y, tours, educators, public API, launches | Public web launch + iOS App Store 1.0 + developer API |
+| Epoch                                                                            | Phases | Theme                                                                         | Exit state (what a user could do)                                                    |
+| -------------------------------------------------------------------------------- | ------ | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| [1 — Foundations](epoch-1-foundations.md)                                        | 1–12   | Repo, infra, temporal bedrock, curation kernel, app skeletons                 | Nothing public; the machine that builds the machine exists                           |
+| [2 — Temporal & Geographic Core](epoch-2-temporal-geographic-core.md)            | 13–25  | Gazetteer, modern baseline world, map+timeline instrument v1, snapshots v1    | Explore a complete, sourced map of _today_; open place pages; search                 |
+| [3 — Political World Through Time](epoch-3-political-world-through-time.md)      | 26–38  | Polities, borders through time (1815→present first), time-parameterized tiles | **Scrub the timeline and watch borders change**; country pages with leaders/capitals |
+| [4 — Events, People & Knowledge Graph](epoch-4-events-people-knowledge-graph.md) | 39–51  | Events, wars, treaties, people, graph, real search, SSR pages                 | Click any year: wars, leaders, births, deaths; everything cross-linked               |
+| [5 — Depth: Cities, Culture & Layers](epoch-5-depth-cities-culture-layers.md)    | 52–63  | City depth, deep-time coarse world, religion/language/trade/climate layers    | Explore antiquity honestly; combine thematic layers; city dossiers                   |
+| [6 — Learning Platform & iOS](epoch-6-learning-platform-and-ios.md)              | 64–77  | Quiz engine, FSRS, challenges, mastery; the native iOS app                    | Learn with SRS on web; carry Chronos on iPhone, offline packs, widgets               |
+| [7 — Contribution, Curation & AI](epoch-7-contribution-curation-ai.md)           | 78–89  | Admin tooling, AI validation gate, **public Wikipedia-style contribution**    | Anyone proposes edits; AI gates; staff/community reviewers approve into canon        |
+| [8 — Scale, Openness & Launch](epoch-8-scale-openness-launch.md)                 | 90–100 | Performance, i18n, a11y, tours, educators, public API, launches               | Public web launch + iOS App Store 1.0 + developer API                                |
 
 ## Dependency Spine
 

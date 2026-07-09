@@ -10,7 +10,14 @@ Frontend work · Testing · Docs · Depends on · Risks · Future · Estimate.
 
 ---
 
-### Phase 1 — Project charter, monorepo & engineering standards — `PLANNED`
+### Phase 1 — Project charter, monorepo & engineering standards — `DONE (2026-07-09)`
+
+> Completion notes: acceptance met — `pnpm install && pnpm check` green (lint,
+> typecheck, tests, boundary check + selftest on seeded violations); CI workflow
+> runs the identical command; README quickstart accurate. Deviations: commit
+> conventions documented in CONTRIBUTING.md rather than tooling-enforced
+> (over-tooling guard); CLA is a draft pending legal review (flagged to owner).
+
 **Objective.** Turn the blueprint into an operational project: repo layout, standards, licenses, contribution legal groundwork.
 **Requirements.** Monorepo (`/docs /packages /apps /ios /pipelines /infra /data`); pnpm workspaces + turborepo; lint/format/typecheck baseline; commit conventions; module-boundary lint (dependency-cruiser) configured with the doc 01 module graph; LICENSE files (AGPL-3.0 code, CC BY-SA content — ADR-013); CLA text and process; CODEOWNERS; issue/PR templates referencing the Definition of Done.
 **Acceptance.** Fresh clone → `pnpm install && pnpm check` green in CI; a PR violating a module boundary fails CI; README quickstart accurate.
@@ -21,6 +28,7 @@ Frontend work · Testing · Docs · Depends on · Risks · Future · Estimate.
 **Estimate.** 1 week.
 
 ### Phase 2 — CI/CD, environments & infrastructure as code — `PLANNED`
+
 **Objective.** Reproducible dev/staging environments and a deploy pipeline before there is anything to deploy.
 **Requirements.** Docker images per app; docker-compose local stack (Postgres+PostGIS, Redis, MinIO); Terraform/OpenTofu for staging (managed Postgres, container runtime, S3-compatible storage, CDN); GitHub Actions: check → build → deploy-staging; secrets management; preview deploys optional.
 **Acceptance.** `docker compose up` yields a working local stack; merge to main auto-deploys a hello-world API to staging behind TLS; infra reproducible from scratch via IaC in <1 hour.
@@ -31,6 +39,7 @@ Frontend work · Testing · Docs · Depends on · Risks · Future · Estimate.
 **Estimate.** 2 weeks.
 
 ### Phase 3 — Database foundation & migration framework — `PLANNED`
+
 **Objective.** The system-of-record skeleton: Postgres with per-module schemas, migration discipline, and role separation.
 **Requirements.** Postgres 17 + PostGIS + pgvector images/extensions; migration tool (per-module directories, forward-only, reviewed); DB roles: `app_read`, `app_write_curation` (only curation may write canonical schemas — doc 08 §2 rule 1), `pipeline_stage`; connection pooling; seed/fixture loader.
 **Acceptance.** `pnpm db:migrate` builds all module schemas from zero; role separation proven by a test that non-curation writes to a canonical table fail; PostGIS query works in CI.
@@ -42,6 +51,7 @@ Frontend work · Testing · Docs · Depends on · Risks · Future · Estimate.
 **Estimate.** 1.5 weeks.
 
 ### Phase 4 — Entity registry & identifier system — `PLANNED`
+
 **Objective.** Implement `core.entity`, public IDs, slugs, merges/redirects, external ID cross-references (ADR-008; doc 03 §2).
 **Requirements.** ULID generation; prefixed public IDs per kind; `entity_name` (multilingual, dated, typed) and `external_id` tables; merge semantics (status `merged`, permanent redirect) as pure functions ready for curation integration.
 **Acceptance.** Create/read/merge entities via internal service API; redirect resolution honored; property tests for ID uniqueness/stability; external-ID lookup by QID works.
@@ -53,6 +63,7 @@ Frontend work · Testing · Docs · Depends on · Risks · Future · Estimate.
 **Estimate.** 1.5 weeks.
 
 ### Phase 5 — `historical-date` library (the time bedrock) — `PLANNED`
+
 **Objective.** Implement ADR-015 / doc 03 §3: ordinals, precision, bounds, calendars, formatting, interval algebra — in TypeScript and Python, from one spec.
 **Requirements.** JSON Schema + prose spec; TS package `@chronos/historical-date`; Python mirror `chronos_historical_date`; golden test vectors shared by both (later Swift); parsing of human input ("c. 750 BCE", "1848", "1914-06-28", "8th century"); Julian↔Gregorian conversion; interval algebra (overlap, containment, generous-range materialization); DB serialization helpers (`int8range`).
 **Acceptance.** Both implementations pass identical golden vectors (≥300 cases incl. BCE, calendar edges, precision arithmetic); round-trip guarantees; documented formatting for every precision incl. uncertainty ("between 1235 and 1241").
@@ -65,6 +76,7 @@ Frontend work · Testing · Docs · Depends on · Risks · Future · Estimate.
 **Estimate.** 2.5 weeks.
 
 ### Phase 6 — Assertion framework, sources & citations — `PLANNED`
+
 **Objective.** The knowledge atom: assertion mixin, interpretation/primacy/confidence, source entities, citations, live views (doc 03 §4).
 **Requirements.** SQL mixin generator/macros for assertion tables; `core.citation`; source entities with reliability class + license record (doc 04 §4/§6); `*_live` view convention; temporal-consistency check helpers (interval sanity, primacy overlap detection).
 **Acceptance.** A demo assertion table (test-only) supports: parallel conflicting assertions, primacy selection, citation requirement for `accepted`, generous-range temporal queries returning uncertain rows; schema docs generate.
@@ -76,6 +88,7 @@ Frontend work · Testing · Docs · Depends on · Risks · Future · Estimate.
 **Estimate.** 2 weeks.
 
 ### Phase 7 — Curation kernel: revisions, propose→commit, rollback — `PLANNED`
+
 **Objective.** The only write path: proposals, structured diffs, transactional commit with revision records, inverse-revision rollback (doc 03 §8). Internal/service callers only for now.
 **Requirements.** `curation.revision`, `curation.revision_change`; propose/validate/commit service; retire-and-replace mechanics on assertion tables (`created_rev`/`retired_rev`); rollback as inverse revision; record-time ("as of rev R") query helpers; mechanical validation hooks (schema, interval sanity, citation presence).
 **Acceptance.** End-to-end: propose a change set → commit → live views reflect it → rollback restores exactly, with full history queryable; "as-of" queries reproduce pre-change reads; direct table writes without a revision are impossible (role test from P3 extended).
@@ -88,6 +101,7 @@ Frontend work · Testing · Docs · Depends on · Risks · Future · Estimate.
 **Estimate.** 2.5 weeks.
 
 ### Phase 8 — Domain event bus & worker skeleton — `PLANNED`
+
 **Objective.** Transactional outbox + Redis streams + idempotent worker framework (ADR-011) so the serving plane can exist.
 **Requirements.** Outbox table written in curation commit transaction (enforced, not optional — doc 01 §6); relay process; BullMQ queues; worker app skeleton with retry/dead-letter, idempotency keys, metrics.
 **Acceptance.** Committing a revision emits `entity.changed` exactly-once-in-effect to a demo consumer under kill/retry chaos tests; dead-letter and replay runbook works.
@@ -99,6 +113,7 @@ Frontend work · Testing · Docs · Depends on · Risks · Future · Estimate.
 **Estimate.** 1.5 weeks.
 
 ### Phase 9 — API skeleton: modular monolith & GraphQL gateway — `PLANNED`
+
 **Objective.** The `chronos-api` NestJS application: module scaffolding per doc 01 §2, GraphQL server, HistoricalDate scalar, error conventions, request observability.
 **Requirements.** Nest module per blueprint module (empty charters OK); code-first GraphQL; `node(id)` + redirect resolution; persisted-query plumbing; typed error extensions (doc 05 §8); correlation IDs; rate limiting baseline.
 **Acceptance.** `entity(id)` resolves registry entities incl. merge redirects; SDL snapshot test in CI; p95 overhead <20ms on staging echo queries; module-boundary lint covers API code.
@@ -110,6 +125,7 @@ Frontend work · Testing · Docs · Depends on · Risks · Future · Estimate.
 **Estimate.** 2 weeks.
 
 ### Phase 10 — Identity, auth & roles — `PLANNED`
+
 **Objective.** Accounts, OIDC login, JWT sessions, role model (doc 08 §3), preferences.
 **Requirements.** OIDC (Auth Code + PKCE) with a managed IdP behind an abstraction; `identity` schema; roles `reader…admin` in token claims; GraphQL guard decorators; account deletion/export stubs (GDPR posture from day one, doc 03 §9).
 **Acceptance.** Sign up/in/out on staging; role-guarded test mutation rejects insufficient roles; deletion removes personal data and is tested.
@@ -121,6 +137,7 @@ Frontend work · Testing · Docs · Depends on · Risks · Future · Estimate.
 **Estimate.** 1.5 weeks.
 
 ### Phase 11 — Web app skeleton & design system seed — `PLANNED`
+
 **Objective.** The `web` app: Vite+React+TanStack shell, GraphQL client with codegen, design tokens, first components, Storybook (ADR-010).
 **Requirements.** Routing shell (instrument route, entity route, account route — placeholders); Zustand store shaped for (T, viewport, layers, selection); design tokens (color/type/space/motion + cartographic palette placeholders); base components (button, card, dialog, provenance-popover shell); a11y linting; Storybook deployed from CI.
 **Acceptance.** Login round-trip works against staging API; `entity/:id` renders registry data end-to-end; Lighthouse a11y ≥95 on shell; Storybook published.
@@ -132,6 +149,7 @@ Frontend work · Testing · Docs · Depends on · Risks · Future · Estimate.
 **Estimate.** 2 weeks.
 
 ### Phase 12 — Observability, backups & Epoch 1 review — `PLANNED`
+
 **Objective.** Operations floor: metrics/logs/traces, immutable audit log, backup/restore, then the first formal architecture audit.
 **Requirements.** OpenTelemetry across api/workers; dashboards (latency, errors, queue depth, DB health); `telemetry.audit_log` (append-only) capturing auth and curation actions; WAL archiving + daily snapshots + tested restore; on-call-lite alerting; **epoch review**: audit docs 00–08 against built reality, revise Epoch 2 phases, changelog + roadmap statuses.
 **Acceptance.** Staged restore drill from backup passes; a curation commit is traceable end-to-end in dashboards; epoch review notes merged; all Epoch 1 phases marked DONE with dates/revs.

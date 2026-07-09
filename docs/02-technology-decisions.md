@@ -96,7 +96,7 @@ covers the "world feels alive" animation ambitions.
 
 **Decision.** Typed, dated edges live in a Postgres `graph.edge` table (doc 03 §6);
 traversals via recursive CTEs and precomputed relatedness read models. A dedicated
-graph store may be added later *as a serving-plane read model only*.
+graph store may be added later _as a serving-plane read model only_.
 
 **Rationale.** Our graph queries are shallow (1–3 hops, heavily filtered by time
 and type) — Postgres handles these well. A second system of record would split the
@@ -197,7 +197,7 @@ landscapes shift far faster than this project's lifetime.
 spec: an ordinal (Julian Day Number–based int64) plus precision
 (day/month/year/decade/century/millennium/era) plus optional earliest/latest
 bounds; astronomical year numbering internally (1 BCE = year 0); calendar of
-*record* (Julian/Gregorian/other) stored alongside for display/scholarship;
+_record_ (Julian/Gregorian/other) stored alongside for display/scholarship;
 BCE/CE rendering handled at the display layer. Native `timestamp` types are used
 only for machine/system time (audit logs, jobs), never for historical claims.
 
@@ -263,12 +263,12 @@ afterthoughts.
 
 ## Deferred / watched decisions
 
-| Topic | Current stance | Trigger to decide |
-|---|---|---|
-| Kubernetes | Not yet (ADR-012) | >3 runtime services or multi-region |
-| Dedicated graph read store | Not yet (ADR-006) | Deep-traversal features (path queries, centrality) |
-| Kafka | Not yet (ADR-011) | Event volume / multi-consumer fan-out pain |
-| Android app | Not yet; iOS is the native reference (ADR-016) | Post-launch demand; same contracts, MapLibre Native |
-| 3D globe / terrain through time | MapLibre globe projection first | Epoch 8 exploration |
-| Raster time-series (climate/paleo layers) | COG + raster tiles, additive pipeline | Climate-layer phases (Epoch 5) |
-| Federation/API ecosystem | Public read API in Epoch 8 | Community demand |
+| Topic                                     | Current stance                                 | Trigger to decide                                   |
+| ----------------------------------------- | ---------------------------------------------- | --------------------------------------------------- |
+| Kubernetes                                | Not yet (ADR-012)                              | >3 runtime services or multi-region                 |
+| Dedicated graph read store                | Not yet (ADR-006)                              | Deep-traversal features (path queries, centrality)  |
+| Kafka                                     | Not yet (ADR-011)                              | Event volume / multi-consumer fan-out pain          |
+| Android app                               | Not yet; iOS is the native reference (ADR-016) | Post-launch demand; same contracts, MapLibre Native |
+| 3D globe / terrain through time           | MapLibre globe projection first                | Epoch 8 exploration                                 |
+| Raster time-series (climate/paleo layers) | COG + raster tiles, additive pipeline          | Climate-layer phases (Epoch 5)                      |
+| Federation/API ecosystem                  | Public read API in Epoch 8                     | Community demand                                    |

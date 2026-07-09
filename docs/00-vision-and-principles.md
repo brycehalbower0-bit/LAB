@@ -50,9 +50,9 @@ Explicit non-goals prevent decade-scale drift:
 
 Two axioms generate almost every architectural decision in this project:
 
-**Axiom 1 — Temporality.** Every statement about the world is true *for an interval
-of time*, known *with some precision*, asserted *by some source*, *with some
-confidence*. Therefore the fundamental unit of knowledge is not "fact" but
+**Axiom 1 — Temporality.** Every statement about the world is true _for an interval
+of time_, known _with some precision_, asserted _by some source_, _with some
+confidence_. Therefore the fundamental unit of knowledge is not "fact" but
 **assertion(subject, claim, valid-time, precision, source, confidence)**.
 
 **Axiom 2 — Connectedness.** No entity is an island. A battle links to a war, a war
@@ -72,27 +72,30 @@ Corollaries:
 ## 5. The Experience Pillars
 
 ### 5.1 The Map
+
 The map is Earth through time. Timeline scrubbing changes: political borders,
 polity existence, capitals, city presence/size, routes, war frontiers, thematic
 layers (religion, language, population, climate, trade…). Target feel: smooth,
 alive, cinematic — but every rendered feature is backed by a dated, sourced record.
 
 ### 5.2 The Timeline
+
 Multi-resolution, honest about precision:
 
-| Period | Default resolution |
-|---|---|
-| Deep prehistory → ~3000 BCE | Era / millennium |
-| Ancient (~3000 BCE – 500 CE) | Century, decade where supported |
-| Post-classical (500–1500) | Decade / year where supported |
-| Early modern & industrial (1500–1900) | Year |
-| 20th century | Year → month |
-| Recent decades | Month; day where events warrant |
+| Period                                | Default resolution              |
+| ------------------------------------- | ------------------------------- |
+| Deep prehistory → ~3000 BCE           | Era / millennium                |
+| Ancient (~3000 BCE – 500 CE)          | Century, decade where supported |
+| Post-classical (500–1500)             | Decade / year where supported   |
+| Early modern & industrial (1500–1900) | Year                            |
+| 20th century                          | Year → month                    |
+| Recent decades                        | Month; day where events warrant |
 
-Resolution is a property of the *data*, not the UI: the UI offers only the precision
+Resolution is a property of the _data_, not the UI: the UI offers only the precision
 the underlying assertions can support for that region/period.
 
 ### 5.3 The Snapshot
+
 Selecting any date yields a **World Snapshot**: polities and borders, governments
 and leaders, capitals, population estimates, major cities, languages, religions,
 currencies, active wars and treaties, recent discoveries and cultural events,
@@ -100,15 +103,18 @@ births/deaths, exploration and trade activity — each item sourced and
 confidence-scored. The snapshot is the app's central read model (see doc 03 §7).
 
 ### 5.4 The Pages
+
 Location pages, country/polity pages, city pages, person pages, event pages — all
 generated from the graph, all internally timelines, all cross-linked, all citable.
 
 ### 5.5 The Learning Loop
+
 Explore → be quizzed on what you explored → spaced repetition schedules reviews →
 mastery analytics guide what to explore next. Daily/weekly challenges and custom
 study sets ride on the same engine.
 
 ### 5.6 The Contribution Loop
+
 See something missing or wrong → propose an edit (a dated, sourced claim — possibly
 a redrawn border) → **AI validation** checks sources, temporal and geometric
 consistency, duplicates, and license compliance, and attaches a review brief →
@@ -125,7 +131,7 @@ protection. The full workflow is specified in doc 08.
   frontier zone, disputed, conjectural) and are rendered differently for each.
 - Population and economic figures are **estimates with ranges** and named sources.
 - Conflicting interpretations coexist: the system stores competing assertions and
-  the editorial layer selects a *primary* view without deleting alternatives.
+  the editorial layer selects a _primary_ view without deleting alternatives.
 - The UI never fabricates crispness. A conjectural border is visibly conjectural.
 
 ## 7. Platforms
@@ -139,7 +145,7 @@ and honest sequencing as the method:
 - **iOS (native)** — Swift/SwiftUI with native MapLibre rendering. Same API, same
   knowledge, tuned for touch: one-thumb timeline scrubbing, gesture-driven map,
   offline study packs, widgets ("This day in history", daily challenge),
-  notifications for spaced-repetition reviews. iOS is where the *learning loop*
+  notifications for spaced-repetition reviews. iOS is where the _learning loop_
   shines; curation/admin remains web-only.
 
 Platform rules: no client owns data or logic that belongs in the platform API;
@@ -169,7 +175,7 @@ ADR-010/ADR-016 and the deferred-decisions table).
 1. When correctness and beauty conflict, correctness wins — then we make
    correctness beautiful.
 2. When a feature would require inventing data, the feature waits for data.
-3. Depth for a few regions beats shallowness everywhere — but the *schema* is
+3. Depth for a few regions beats shallowness everywhere — but the _schema_ is
    global from day one.
 4. Every new entity type must define its temporal semantics before it ships.
 5. The reader's time is sacred: fast loads, obvious navigation, no dead ends —

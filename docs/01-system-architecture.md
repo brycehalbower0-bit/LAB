@@ -14,7 +14,7 @@ the rules for evolving the architecture without rewriting it.
 
 Rationale (full reasoning in ADR-002):
 
-- A small team building a deeply *relational* product (everything joins everything)
+- A small team building a deeply _relational_ product (everything joins everything)
   is fastest and safest inside one process and one primary database.
 - Premature microservices would multiply operational cost and — worse — encourage
   data duplication, which is fatal to a "single unified timeline."
@@ -74,24 +74,24 @@ Hard rules that make the monolith splittable:
 
 ### Module responsibilities (one line each)
 
-| Module | Owns | Never does |
-|---|---|---|
-| `temporal-core` | Entity registry, assertion model, HistoricalDate, sources/citations, confidence | Domain-specific logic |
-| `gazetteer` | Places, historical names, geometry versions, location timelines | Political interpretation |
-| `polity` | Polities (states/empires/colonies), border claims, governments, leaders-in-office, capitals, flags, currencies-in-use | Storing people (references `person`) |
-| `event` | Events, wars, battles, treaties, causes/consequences, participants, importance scoring | Rendering |
-| `person` | Persons, lifespans, roles, offices, affiliations | Office definitions (those live in `polity`) |
-| `culture` | Languages, religions, currencies, inventions, works, ideas and their spread | Geometry storage (delegates to gazetteer) |
-| `knowledge-graph` | Typed, dated edge store + traversal/relatedness API over all entities | Owning entity truth |
-| `snapshot` | The World Snapshot read model: compute/cache "world at time T" | Being a source of truth |
-| `atlas` | Layer definitions, cartographic styles, tile generation orchestration | Storing domain data |
-| `search` | Indexing pipeline, entity/keyword/NL/time-aware queries | Being a source of truth |
-| `learning` | Quiz item generation, SRS scheduling, challenges, mastery analytics, achievements | Authoring facts |
-| `narrative` | Curated tours, story maps, educational summaries | Bypassing citation rules |
-| `identity` | Accounts, OIDC auth, roles/permissions, preferences | Domain data |
-| `curation` | Revisions, public contribution intake, review queues, reputation tiers, approval workflow, diff, rollback, bulk import | Direct writes without revision records |
-| `ai-assist` | AI validation gate for proposals, LLM drafting/suggestions/consistency checks, always via `curation` | Writing canonical data |
-| `telemetry` | Product analytics, learning telemetry, audit trail | Blocking user flows |
+| Module            | Owns                                                                                                                   | Never does                                  |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
+| `temporal-core`   | Entity registry, assertion model, HistoricalDate, sources/citations, confidence                                        | Domain-specific logic                       |
+| `gazetteer`       | Places, historical names, geometry versions, location timelines                                                        | Political interpretation                    |
+| `polity`          | Polities (states/empires/colonies), border claims, governments, leaders-in-office, capitals, flags, currencies-in-use  | Storing people (references `person`)        |
+| `event`           | Events, wars, battles, treaties, causes/consequences, participants, importance scoring                                 | Rendering                                   |
+| `person`          | Persons, lifespans, roles, offices, affiliations                                                                       | Office definitions (those live in `polity`) |
+| `culture`         | Languages, religions, currencies, inventions, works, ideas and their spread                                            | Geometry storage (delegates to gazetteer)   |
+| `knowledge-graph` | Typed, dated edge store + traversal/relatedness API over all entities                                                  | Owning entity truth                         |
+| `snapshot`        | The World Snapshot read model: compute/cache "world at time T"                                                         | Being a source of truth                     |
+| `atlas`           | Layer definitions, cartographic styles, tile generation orchestration                                                  | Storing domain data                         |
+| `search`          | Indexing pipeline, entity/keyword/NL/time-aware queries                                                                | Being a source of truth                     |
+| `learning`        | Quiz item generation, SRS scheduling, challenges, mastery analytics, achievements                                      | Authoring facts                             |
+| `narrative`       | Curated tours, story maps, educational summaries                                                                       | Bypassing citation rules                    |
+| `identity`        | Accounts, OIDC auth, roles/permissions, preferences                                                                    | Domain data                                 |
+| `curation`        | Revisions, public contribution intake, review queues, reputation tiers, approval workflow, diff, rollback, bulk import | Direct writes without revision records      |
+| `ai-assist`       | AI validation gate for proposals, LLM drafting/suggestions/consistency checks, always via `curation`                   | Writing canonical data                      |
+| `telemetry`       | Product analytics, learning telemetry, audit trail                                                                     | Blocking user flows                         |
 
 ## 3. Runtime Topology
 
@@ -139,7 +139,7 @@ app behind role checks, later separable).
 Same picture, plus: read replicas for PostgreSQL; snapshot cache promoted to its own
 store; OpenSearch cluster; background AI-assist workers; optional extraction of
 `search` and `learning` into services if load demands (the boundaries permit it —
-the *decision* is deferred until data demands it).
+the _decision_ is deferred until data demands it).
 
 ### Stage C — Maturity (Epoch 8+)
 
@@ -215,7 +215,7 @@ loss of knowledge. This is what makes decades of schema evolution survivable.
 
 ### 5.3 Learning loop
 
-Quiz items are *generated* from canonical assertions (templates + AI-assist with
+Quiz items are _generated_ from canonical assertions (templates + AI-assist with
 review, see doc 07), stored with links back to their source assertions. When an
 assertion changes, dependent items are flagged/regenerated. SRS scheduling runs in
 workers; analytics land in `telemetry`.
@@ -242,7 +242,7 @@ workers; analytics land in `telemetry`.
   shared spec with per-platform implementations tested against shared golden
   vectors — never re-invented per client.
 - **Internationalization:** all display strings and entity names are localizable
-  from day one (names are *data* — multilingual, dated, sourced); UI chrome uses
+  from day one (names are _data_ — multilingual, dated, sourced); UI chrome uses
   standard i18n tooling. English-first content, i18n-ready schema.
 - **Testing doctrine:** see doc 08 §6. Every module ships unit + contract tests;
   temporal logic has property-based tests; ingestion has golden-file tests; the

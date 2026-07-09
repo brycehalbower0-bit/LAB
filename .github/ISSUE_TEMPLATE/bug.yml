@@ -1,0 +1,23 @@
+name: Bug report
+description: Something is broken (code, build, docs inconsistency)
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction
+      description: Steps, commands, environment.
+    validations:
+      required: true
+  - type: input
+    id: phase
+    attributes:
+      label: Related roadmap phase (if known)
+      placeholder: e.g. Phase 1
