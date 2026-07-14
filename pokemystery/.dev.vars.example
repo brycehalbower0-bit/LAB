@@ -1,0 +1,12 @@
+# Copy to .dev.vars for local development. Never commit .dev.vars.
+#
+# Non-secret defaults live in wrangler.jsonc "vars". Everything here is
+# optional — the app runs fully without AI.
+
+# Enable the Workers AI natural-language fallback parser ("true"/"false").
+# Requires the `ai` binding in wrangler.jsonc and a Cloudflare account when
+# running remotely. The deterministic parser always runs first.
+AI_PARSER_ENABLED=false
+
+# Model used for the AI fallback parser (Workers AI model id).
+# AI_PARSER_MODEL=@cf/meta/llama-3.1-8b-instruct

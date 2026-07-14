@@ -1,0 +1,17 @@
+# dependencies / build
+node_modules/
+dist/
+*.tsbuildinfo
+
+# wrangler local state (local D1, cache)
+.wrangler/
+.dev.vars
+
+# sync pipeline working files (normalized output IS committed; raw cache is not)
+data/cache/
+data/generated-sql/
+
+# test output
+coverage/
+playwright-report/
+test-results/

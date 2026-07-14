@@ -1,0 +1,37 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "pokemystery",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-06-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": "./dist/client",
+    "not_found_handling": "single-page-application",
+    "binding": "ASSETS"
+  },
+  "observability": {
+    "enabled": true
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "pokemystery-db",
+      // Placeholder ID for local development. For remote deploys, create the
+      // database with `wrangler d1 create pokemystery-db` and paste the real
+      // UUID here (see docs/DEPLOYMENT.md).
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "migrations"
+    }
+  ],
+  // Workers AI: optional natural-language fallback parser. The deterministic
+  // parser handles most questions; AI is only consulted when it fails and
+  // AI_PARSER_ENABLED=true. Safe to remove if you don't want Workers AI.
+  "ai": {
+    "binding": "AI"
+  },
+  "vars": {
+    // Non-secret configuration. Secrets belong in .dev.vars / wrangler secret.
+    "APP_NAME": "PokeMystery",
+    "AI_PARSER_ENABLED": "false"
+  }
+}
