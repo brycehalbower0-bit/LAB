@@ -17,10 +17,10 @@ complete.
 | 2     | Shared domain types + Zod schemas                                 | ✅ Complete    |
 | 3     | Data import pipeline (PokéAPI sync, validate, seed)               | ✅ Complete    |
 | 4     | Mode 1 engine: Bayesian guesser (entropy / information gain)      | ✅ Complete    |
-| 5     | Mode 2 engine: deterministic NL parser + query evaluator          | ⬜ Not started |
-| 6     | API worker: Hono routes, sessions, rate limiting, AI fallback     | ⬜ Not started |
-| 7     | React frontend: landing, settings, both game modes, attribution   | ⬜ Not started |
-| 8     | E2E tests, docs, deployment guide, final verification             | ⬜ Not started |
+| 5     | Mode 2 engine: deterministic NL parser + query evaluator          | ✅ Complete    |
+| 6     | API worker: Hono routes, sessions, rate limiting, AI fallback     | ✅ Complete    |
+| 7     | React frontend: landing, settings, both game modes, attribution   | ✅ Complete    |
+| 8     | E2E tests, docs, deployment guide, final verification             | ✅ Complete    |
 
 ## Phase 0 — Scaffold (complete)
 
@@ -106,8 +106,79 @@ repeat guesses, undo restoration, contradiction detection, and full-game
 simulations on the real Gen 1 fixture — win rate ≥ 90% against a truthful
 player within 20 questions.
 
+## Phase 5 — NL parser (complete)
+
+`shared/parser/`: lexicon (type/region/color/trait/unit aliases,
+contractions) + ordered rule matchers. Handles every phrasing mandated in the
+spec, negation ("is it not…", "isn't it…"), unit conversion (m/cm/ft/kg/lb…),
+vague sizes, typo-tolerant name guesses (capped Levenshtein), and returns a
+human-readable "interpreted" restatement for UI transparency. Unparseable
+input → null → optional AI fallback → "please rephrase".
+
+## Phase 6 — API worker (complete)
+
+Hono routes over D1 sessions (opaque 256-bit tokens, 24 h expiry):
+
+- `POST /api/games` — both modes; settings validated server-side.
+- Mode 1: `/answer`, `/guess-response`, `/undo`, `/reveal` (contradiction
+  report). Engine state serialized server-side; undo replays history.
+- Mode 2: `/ask` (deterministic parser → optional Workers AI → rephrase),
+  `/guess`, `/hint` (gen → type → first letter), `/giveup`. Name-guess
+  questions consume guess slots (difficulty: easy 5 / normal 3 / hard 2).
+- `GET /api/games/:id` (no secrets), `/api/meta`, `/api/pokemon/names`,
+  `POST /api/reports` (stored for review; never auto-edits canonical data).
+- Zod on every input, prepared statements on every query, ask endpoint
+  rate-limited 20/min/session, parse logs + import runs recorded.
+- **Secret never serialized to the client** until win/loss/give-up.
+- Workers AI binding is opt-in (commented in wrangler.jsonc) because remote
+  bindings require Cloudflare credentials during `vite dev`. The AI fallback
+  only maps text → StructuredQuery (schema-validated, identifier kinds
+  forbidden); the deterministic evaluator answers everything.
+
+## Phase 7 — Frontend (complete)
+
+React 19 SPA (hash routing, no router dep): landing with two mode cards +
+how-to-play, settings page (generations, legendary/mythical/baby/forms,
+difficulty, max questions, hints, sprites), both game UIs (Mode 1: big
+question card, 5 answer buttons, undo, guess confirmation, defeat →
+name-autocomplete reveal → contradictions + report; Mode 2: chat log with
+answer pills and interpretations, example-question chips, hints, direct
+guessing, give-up reveal), about/attribution page. Dark/light/system themes
+(pre-paint script avoids flash), `prefers-reduced-motion` honored, aria-live
+game announcements, keyboard-operable throughout, mobile-first CSS.
+Verified visually via Playwright screenshots (light desktop + dark mobile).
+
+## Phase 8 — E2E, docs, verification (complete)
+
+- Playwright suite (6 tests, all passing) against the real dev server +
+  seeded local D1: landing/theme/settings persistence, Mode 1
+  question/undo/full-game-to-resolution, Mode 2
+  ask/rephrase/hint/guess/give-up.
+- README (quickstart, commands, deployment runbook), DATA_SOURCES.
+- Final verification: `npm run check` (typecheck ✅ lint ✅ 38 unit tests ✅
+  build ✅) + `npm run test:e2e` (6 ✅) + fixture seed + full-dex reload.
+
+## Known limitations / future work
+
+- Alternate forms: schema-ready (`species_id` + `default_form_name`), not
+  yet imported; the settings toggle is visible but disabled.
+- `question_matches` (precomputed match probabilities) exists but is unused —
+  runtime evaluation of 73 questions × ≤1025 candidates is fast enough.
+- Popularity-weighted priors are supported by design (uniform priors today).
+- Difficulty currently affects only direct-guess allowance in Mode 2.
+- `data:seed:test` and sync loads are upserts; they don't delete rows
+  outside the imported range.
+
 ## Phase log
 
 - **Phase 0** — scaffold verified: `tsc -b` ✅, `eslint .` ✅, `vite build` ✅.
 - **Phases 1–4** — verified: `tsc -b` ✅, `eslint .` ✅, `vitest run` (21) ✅,
   `vite build` ✅, full-dex import into local D1 ✅.
+- **Phase 5** — verified: `vitest run` (38) ✅ incl. all mandated parser
+  examples.
+- **Phase 6** — verified: typecheck/lint/tests/build ✅ + live smoke test of
+  both modes via `vite dev` + curl against local D1 (Mode 2 secret was
+  Nidoran♀; every answer matched ground truth; no secret leakage).
+- **Phases 7–8** — verified: full `npm run check` ✅, `npm run test:e2e`
+  (6 Playwright tests) ✅, screenshots reviewed in light/desktop and
+  dark/mobile.
