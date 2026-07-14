@@ -4,14 +4,14 @@
  */
 
 import { z } from 'zod';
-import { PLAYER_ANSWERS } from './types';
+import { isGeneration, PLAYER_ANSWERS } from './types';
 
 export const gameSettingsSchema = z.object({
   generations: z
     .array(z.number().int().min(1).max(9))
     .min(1)
     .max(9)
-    .transform((gens) => [...new Set(gens)].sort((a, b) => a - b)),
+    .transform((gens) => [...new Set(gens)].sort((a, b) => a - b).filter(isGeneration)),
   includeLegendary: z.boolean(),
   includeMythical: z.boolean(),
   includeBaby: z.boolean(),

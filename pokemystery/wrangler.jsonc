@@ -25,13 +25,17 @@
   ],
   // Workers AI: optional natural-language fallback parser. The deterministic
   // parser handles most questions; AI is only consulted when it fails and
-  // AI_PARSER_ENABLED=true. Safe to remove if you don't want Workers AI.
-  "ai": {
-    "binding": "AI"
-  },
+  // AI_PARSER_ENABLED=true. Workers AI is a REMOTE binding: enabling it makes
+  // `vite dev` require Cloudflare credentials (wrangler login /
+  // CLOUDFLARE_API_TOKEN). Uncomment to enable, then set
+  // AI_PARSER_ENABLED=true and rerun `wrangler types`.
+  // "ai": {
+  //   "binding": "AI"
+  // },
   "vars": {
     // Non-secret configuration. Secrets belong in .dev.vars / wrangler secret.
     "APP_NAME": "PokeMystery",
-    "AI_PARSER_ENABLED": "false"
+    "AI_PARSER_ENABLED": "false",
+    "AI_PARSER_MODEL": "@cf/meta/llama-3.1-8b-instruct"
   }
 }

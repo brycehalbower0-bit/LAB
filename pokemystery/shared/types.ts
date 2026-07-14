@@ -30,6 +30,10 @@ export type TypeName = (typeof TYPE_NAMES)[number];
 export const GENERATIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9] as const;
 export type Generation = (typeof GENERATIONS)[number];
 
+export function isGeneration(value: number): value is Generation {
+  return Number.isInteger(value) && value >= 1 && value <= 9;
+}
+
 /** Region -> generation introduced. Used by the parser ("is it from Sinnoh?"). */
 export const REGION_TO_GENERATION: Readonly<Record<string, Generation>> = {
   kanto: 1,

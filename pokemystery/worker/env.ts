@@ -5,5 +5,12 @@
  * from wrangler.jsonc, so bindings stay in sync with configuration.
  */
 export interface AppEnv {
-  Bindings: Env;
+  // `wrangler types` narrows string vars to their literal configured values;
+  // widen the toggles so runtime overrides (.dev.vars, dashboard) typecheck.
+  Bindings: Omit<Env, 'AI_PARSER_ENABLED' | 'AI_PARSER_MODEL'> & {
+    AI_PARSER_ENABLED: string;
+    AI_PARSER_MODEL: string | undefined;
+    /** Present only when the optional `ai` binding is enabled in wrangler.jsonc. */
+    AI?: Ai;
+  };
 }
