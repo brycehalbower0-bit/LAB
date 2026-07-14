@@ -4,18 +4,28 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import type { CandidatePokemon, PokemonRecord, TraitMap } from '../shared/types';
 import { TRAIT_KINDS } from '../shared/traits';
-import { deriveTraits } from '../scripts/sync/derive-traits';
+import { deriveTraits, mergeAssignments, type TraitAssignment } from '../scripts/sync/derive-traits';
 import type { EvaluationContext } from '../shared/engine/evaluate';
 
-const FIXTURE_DIR = path.join(__dirname, '..', 'data', 'fixtures');
+const DATA_DIR = path.join(__dirname, '..', 'data');
+const FIXTURE_DIR = path.join(DATA_DIR, 'fixtures');
 
+/** Fixture candidates with the same derived+curated traits production gets. */
 export function loadFixturePokemon(): CandidatePokemon[] {
   const file = JSON.parse(readFileSync(path.join(FIXTURE_DIR, 'pokemon.json'), 'utf8')) as {
     records: PokemonRecord[];
   };
+  const curatedFile = JSON.parse(
+    readFileSync(path.join(DATA_DIR, 'curated', 'trait-assignments.json'), 'utf8'),
+  ) as { assignments: { pokemonId: number; traitKey: string; confidence: number }[] };
+
   return file.records.map((record) => {
+    const derived = deriveTraits(record);
+    const curated: TraitAssignment[] = curatedFile.assignments
+      .filter((a) => a.pokemonId === record.id)
+      .map((a) => ({ ...a, source: 'curated' }));
     const traits: Record<string, number> = {};
-    for (const assignment of deriveTraits(record)) {
+    for (const assignment of mergeAssignments(derived, curated)) {
       traits[assignment.traitKey] = assignment.confidence;
     }
     return { record, traits };

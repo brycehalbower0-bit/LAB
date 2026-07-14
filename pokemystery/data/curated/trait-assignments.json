@@ -1,6 +1,8 @@
 {
   "$comment": "Hand-curated subjective trait assignments (source='curated'). These supplement the deterministic shape/color/egg-group derivations. Confidence is a 0..1 belief that a typical player would answer 'yes'. Reviewed additions welcome; one player report never edits this file automatically.",
   "assignments": [
+    { "pokemonId": 6, "traitKey": "has-wings", "confidence": 0.95 },
+    { "pokemonId": 149, "traitKey": "has-wings", "confidence": 0.95 },
     { "pokemonId": 25, "traitKey": "cute", "confidence": 0.95 },
     { "pokemonId": 25, "traitKey": "rodent-like", "confidence": 0.95 },
     { "pokemonId": 26, "traitKey": "rodent-like", "confidence": 0.9 },

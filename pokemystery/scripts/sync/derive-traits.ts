@@ -68,6 +68,15 @@ export function deriveTraits(pokemon: PokemonRecord): TraitAssignment[] {
     const colorTrait = COLOR_TRAITS[pokemon.color];
     if (colorTrait !== undefined) add(colorTrait, 0.9, 'derived:color');
   }
+  // Winged fliers whose shape is a body plan (upright/humanoid) rather than
+  // "wings" — e.g. Charizard, Dragonite — still usually have wings.
+  if (
+    pokemon.types.includes('flying') &&
+    (pokemon.shape === 'upright' || pokemon.shape === 'humanoid') &&
+    !out.some((t) => t.traitKey === 'has-wings')
+  ) {
+    add('has-wings', 0.7, 'derived:type-shape');
+  }
   if (pokemon.types.includes('dragon')) {
     add('dragon-like', 0.9, 'derived:type');
   } else if (pokemon.eggGroups.includes('dragon')) {
