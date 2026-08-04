@@ -43,6 +43,16 @@ content is rejected (`EMU_ERR_ENCRYPTED_CONTENT`), never decrypted, and
 key-handling code inherited from upstream cores is stripped, not left
 dormant. This removes the DMCA §1201 theory that ended Yuzu. (PLAN.md §2.1)
 
+## D7. Interim app shell: Expo/React Native, with a native hot path
+
+The shell (`App/`) is Expo/React Native for the time being, because EAS
+Build provides cloud-Mac iOS builds — device builds (including the §10.3
+floor-device benchmark) without local Apple hardware. Constraints that
+keep this reversible and safe: cores stay native C/C++ behind the shared
+ABI; JS never sits on the frame/audio hot path (Metal rendering, audio,
+and touch-overlay input are native modules); a later SwiftUI rewrite
+would carry the native modules and cores over unchanged. (PLAN.md §8)
+
 ## D6. The ARM11 spike's directional result stands
 
 First measurement (Linux container, shared x86_64 core, zero ARM64

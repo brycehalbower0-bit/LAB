@@ -523,10 +523,23 @@ work; retrofitting it later means touching every core.
 
 ## 8. iOS platform specifics
 
-- **Language/toolchain:** Swift + SwiftUI app shell, Objective-C++ (`.mm`)
-  bridge layer, C/C++ per-core libraries built as separate static library
-  targets (mGBA is C, melonDS and the eventual 3DS core are C++). SwiftPM
-  for app-side modules; cores vendored/submoduled.
+- **Shell strategy (interim — ADR 0001-D7):** the app shell is currently
+  **Expo/React Native** (`App/`), chosen for one dominant practical
+  reason: **EAS Build compiles iOS apps on cloud Macs**, so the project
+  can produce installable device builds — including the §10.3 benchmark
+  on the floor device — without local Apple hardware in the loop. The
+  cores are unaffected: they are native C/C++ behind the shared ABI
+  either way, compiled at full optimization inside an Expo native module.
+  Standing rule that makes this safe: **JS never sits on the frame or
+  audio hot path** — rendering (Metal view), audio (AVAudioEngine), and
+  the touch-overlay input fast path are native modules; JS owns library
+  UI, settings, and navigation. If the shell is later rewritten in
+  SwiftUI per the original design, the native modules and cores carry
+  over unchanged.
+- **Language/toolchain (native side):** Swift for Expo-module/platform
+  glue, Objective-C++ (`.mm`) where bridging requires it, C/C++ per-core
+  static libraries (mGBA is C, melonDS and the eventual 3DS core are
+  C++), cores vendored/submoduled.
   - **Threading model:** one emulation thread per active core (only one
     core active at a time — you're playing one game), `CADisplayLink`-
     synced pacing decoupled from audio so a dropped frame doesn't stutter
