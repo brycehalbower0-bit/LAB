@@ -564,6 +564,9 @@ work; retrofitting it later means touching every core.
                                original no-JIT ARM11 backend — the long pole
     Shared/include/core_api.h    Shared C ABI (§5.1) all three cores implement
     Shared/include/cpu_backend.h Swappable interpreter/JIT CPU interface (§6.4)
+  Spikes/
+    arm11-interp/             §10.3's throwaway-quality-but-tested harness:
+                               naive vs block-cached ARM interpreter + bench
   App/                        iOS app (Xcode project / SwiftPM)
     EmulatorKit/              Swift package: core-agnostic bridge + thread mgmt
     UI/                       SwiftUI screens (library, in-game overlay, settings)
