@@ -49,13 +49,17 @@ be bundled, linked, or fetched by the app, for any system.
     BIOS, à la mGBA/VBA, which sidesteps this requirement for most titles).
   - NDS: BIOS (ARM7+ARM9) + firmware dump, or a from-scratch HLE BIOS
     (melonDS supports both native and a partial HLE BIOS path).
-  - 3DS: **substantially more involved** — needs `boot9.bin`/`boot11.bin`
-    and a keys file (either extracted via a one-time process on the user's
-    own console using existing community homebrew, or in newer
-    firmware-independent forms). The app must not perform or facilitate key
-    extraction itself; it only accepts user-supplied files, same as the
-    other two systems, but the barrier to a user actually having these
-    files is materially higher than a GBA/NDS BIOS dump.
+  - 3DS: **the constrained case, by deliberate design.** Rather than
+    accepting key material (`boot9.bin`/`boot11.bin`, `aes_keys.txt`) and
+    decrypting retail content the way desktop 3DS emulators do, the app
+    accepts **only already-decrypted dumps** the user produced on their own
+    console, and handles no key material at all where the core can be made
+    to run without it. See §2.1 for why this is a hard constraint rather
+    than a preference: it sidesteps the exact DMCA §1201 theory Nintendo
+    used against Yuzu. The cost is real setup friction for users, and the
+    UI needs to set that expectation clearly; the benefit is removing the
+    project's principal legal exposure. Where the chosen core has key
+    handling built in, **strip it** rather than leaving it dormant.
 - **No JIT.** Apple does not grant the `dynamic-codesigning`/JIT
   entitlement to ordinary App Store apps. This rules out classic
   dynarec-with-`mmap(PROT_EXEC)` on all three systems. Impact differs a lot
@@ -97,19 +101,61 @@ be bundled, linked, or fetched by the app, for any system.
     single combined compliance plan (source offer covering all three,
     consistent notices/about screen) rather than three separate ad hoc
     treatments — do this once, early, as part of Phase 0's ADR.
-- **3DS-specific legal signal worth weighing explicitly:** in March 2024,
-  Nintendo sent the Citra project (Citra's team/org, via its corporate
-  sponsor at the time) a cease-and-desist, and the original Citra team
-  halted development and took down official builds/source at the time.
-  Community forks (Lime3DS, Azahar) and the independent Panda3DS project
-  have continued since. Emulation itself (the clean-room reverse
-  engineering of hardware behavior) is broadly understood to be legal in
-  the US and many jurisdictions, and Nintendo's action was reportedly tied
-  to specific circumstances (monetization, branding, and a settlement) more
-  than a blanket "emulating the 3DS is illegal" claim — but it demonstrates
-  Nintendo is willing and able to act against 3DS emulation projects in a
-  way it has not against GBA/NDS emulation. Factor this into risk appetite
-  and timeline expectations for the 3DS portion specifically (§12).
+### 2.1 What actually happened to Citra, and what it does and doesn't mean
+
+Getting this right matters, because the popular summary ("Nintendo killed
+Citra, so 3DS emulation is legally radioactive") is wrong in a way that
+leads to bad design decisions.
+
+**The facts.** In February 2024 Nintendo sued **Yuzu**, the Switch
+emulator, in the District of Rhode Island. Tropic Haze LLC settled roughly
+a week later for **$2.4 million** and agreed to stop work on anything
+infringing Nintendo's copyrights. **Citra was made by the same team, was
+never named in the court filings, and was taken down as collateral of that
+settlement.** Nintendo has never litigated against 3DS emulation on its
+own merits. Community continuations (Lime3DS, Azahar) and the independent
+Panda3DS project carried on afterward.
+
+**Nintendo's actual legal theory** was not "emulators are illegal." It was
+that Yuzu required cryptographic keys extracted from a real console in
+order to decrypt retail games — i.e. a **DMCA §1201 anti-circumvention**
+claim, plus the argument that there was "no lawful way to use Yuzu." The
+settlement produced no precedent, but the theory tells us exactly where
+the danger is.
+
+**What protects emulation.** *Sony v. Connectix* (9th Cir. 2000) and
+*Sony v. Bleem* establish that reverse-engineering a console to build an
+emulator is fair use. Emulators themselves are lawful on real, settled
+precedent. That is a stronger foundation than any argument from the
+console being discontinued.
+
+**What does *not* protect it — do not build on this.** Discontinuation of
+hardware confers no rights. There is no "abandonware" doctrine in US
+copyright law; corporate works are protected for ~95 years. The 3DS being
+discontinued in 2020 and the eShop closing in March 2023 have **zero**
+legal effect on the copyright status of its firmware, keys, or games. The
+narrow DMCA §1201 exemptions the Copyright Office grants for preservation
+of obsolete software are limited to libraries, archives, and museums and
+do not cover a general-distribution consumer app. Discontinuation is
+relevant to Nintendo's *enforcement appetite* and to public optics — real
+factors, but not a legal shield, and the plan must not treat them as one.
+
+**Therefore, the load-bearing design decision (see §6.3, §7):** the app
+must never contain, derive, extract, or assist in extracting console keys,
+and must never decrypt encrypted retail content. **Accept only
+already-decrypted dumps that the user produced themselves on hardware they
+own.** This costs some setup friction for users and removes the single
+legal theory Nintendo has actually prevailed on. Treat it as a hard
+architectural constraint, not a preference.
+
+Also worth avoiding, as they shaped the Yuzu outcome and the optics around
+it: paid early access or Patreon-gated builds, any association with
+pre-release/leaked titles, and housing multiple current-generation
+emulation projects under one legal entity.
+
+**This document is engineering planning, not legal advice.** Before any
+public 3DS release, get the key-handling and decryption design reviewed by
+a lawyer with DMCA §1201 experience.
 - Regional distribution: if App Store review rejects the app (whole app or
   the 3DS capability specifically) in some storefronts, TestFlight and, in
   the EU under the DMA, alternative marketplaces / notarized sideloading
@@ -136,9 +182,10 @@ be bundled, linked, or fetched by the app, for any system.
     performance bar for interpreter-plus-optimization NDS emulation on ARM
     mobile SoCs.
 - **3DS:**
-  - **Citra** (archived after March 2024 C&D) — the original reference
-    implementation; still valuable to study historically even though the
-    upstream project is inactive.
+  - **Citra** (taken offline March 2024 as collateral of the Yuzu
+    settlement, not by any action against Citra itself — §2.1) — the
+    original reference implementation; still valuable to study even though
+    the upstream project is inactive.
   - **Lime3DS** and **Azahar** — active community continuations of the
     Citra codebase; check current license/governance status before basing
     a decision on either, since both emerged post-shutdown and details may
@@ -350,11 +397,17 @@ original engineering work, not as a port.
   analog input the on-screen overlay and `GameController` mapping both need
   to account for (most MFi/Bluetooth controllers have a second stick,
   simplifying that half of the problem versus the touch overlay case).
-- **Firmware/keys:** see §2 — materially higher barrier for users than
-  GBA/NDS BIOS files; UI copy needs to set expectations accordingly
-  (pointing at general instructions for how console owners typically
-  obtain their own key files, without the app performing extraction
-  itself).
+- **Content handling — decrypted-only, no key material (§2, §2.1):** this
+  is an architectural constraint on the core, not just a UI policy. The
+  chosen upstream core will almost certainly ship key-loading and
+  content-decryption paths (Citra-lineage cores certainly do); **remove
+  them** rather than leaving them present-but-unused, and make "runs
+  without any key material" an explicit acceptance criterion of the Phase 3
+  integration. Where a core genuinely cannot boot without `boot9`-derived
+  state, treat that as a design problem to solve in the core, not as a
+  reason to accept keys. UI copy must set the setup-friction expectation
+  honestly up front, since this is a meaningfully higher bar than
+  importing a GBA or NDS BIOS.
 
 ### 6.4 The CPU backend must be swappable — this is the whole strategy
 
@@ -612,7 +665,9 @@ local wireless multiplayer, cloud save sync, per-game shaders/CRT filters,
 |---|---|---|---|
 | No-JIT ARM11 interpreter may not reach real-time | 3DS | High — but no longer project-critical | §6.4's swappable backend means a shortfall changes *which channel ships first*, not whether the product exists; §10.3 quantifies the gap early so it's a tracked number, not a surprise |
 | PICA200 shader-to-Metal translation complexity | 3DS | High | Sequence after the CPU throughput spike; budget as its own substantial workstream, not a rendering afterthought |
-| Nintendo legal action precedent (Citra C&D, 2024) | 3DS | Medium-high, business/legal | Known and accepted risk factor; keep 3DS distributable outside the App Store (§2, §6.4); preserve clean-room hygiene and avoid branding/monetization patterns that drew action previously |
+| DMCA §1201 anti-circumvention exposure — the theory Nintendo actually used against Yuzu | 3DS | **Highest legal risk, and the most controllable** | Decrypted-dumps-only, zero key handling, strip decryption paths from the upstream core (§2.1, §6.3); lawyer review of the content-handling design before any public 3DS release |
+| Nintendo enforcement appetite generally (Yuzu suit 2024; Citra taken down as collateral) | 3DS | Medium, business/legal | Emulation itself rests on solid precedent (*Connectix*, *Bleem* — §2.1); avoid the aggravating factors from the Yuzu case: no paid early access, no leaked-title association, don't house multiple current-gen emulators under one entity; keep 3DS distributable outside the App Store (§6.4) |
+| Assuming discontinued hardware confers legal rights | 3DS | Medium — a planning risk, not a legal one | §2.1 states plainly that it does not; no abandonware doctrine exists. Ensure nobody on the team builds decisions on this premise |
 | No App Store precedent for 3DS emulators | 3DS | Medium risk / **the opportunity** | Being first is the goal (§1). Follow Guideline 4.7 precisely, submit GBA+NDS first to establish a review track record, and have the sideload/EU channel ready so review timing never blocks the product |
 | NDS interpreter-only performance ceiling | NDS | High (was project-critical in the original single-system plan) | Phase 0 feasibility gate (§10.2); fallback to block-cached interpreter |
 | GPL(v3)/MPL(2.0) combined licensing obligations across 3 cores in one binary | All | Medium, legal | Single combined compliance plan (source offer, notices) decided in Phase 0's ADR, not per-core ad hoc |
