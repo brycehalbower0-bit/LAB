@@ -16,10 +16,15 @@ Per-system v1 scope:
 - **NDS:** as previously scoped — commercial + homebrew, touch/stylus input,
   save states, controller support. Core: **melonDS**, per direction below.
   DSi-exclusive features and GBA slot-2 pass-through are non-goals for v1.
-- **3DS:** commercial + homebrew, **contingent on a dedicated feasibility
-  study** (§6.3, §11). This is a fundamentally harder and riskier system
-  than the other two on iOS specifically — see §2 and §6.3 before assuming
-  it ships alongside GBA/NDS on the same timeline.
+- **3DS:** commercial + homebrew. **Committed scope, and the project's
+  differentiator** — no 3DS emulator has shipped on the App Store, and
+  being first is an explicit goal. It is also by far the hardest of the
+  three on iOS specifically (§6.3): the CPU performance problem is
+  genuinely unsolved by anyone, because every existing 3DS emulator was
+  built for desktop where a JIT is simply available. §6.4 describes the
+  architecture that makes solving it tractable. 3DS ships last of the
+  three, not because it's optional, but because GBA and NDS validate the
+  shared shell cheaply while the hard core work proceeds in parallel.
 
 Cross-system non-goals for v1: any online play (GBA link cable via
 internet, NDS WFC, 3DS online services), local wireless multiplayer between
@@ -162,7 +167,7 @@ be bundled, linked, or fetched by the app, for any system.
 |---|---|---|---|---|
 | GBA | Adapt existing core | mGBA | MPL-2.0 | High — low technical risk |
 | NDS | Adapt existing core | **melonDS** (confirmed) | GPLv3 | High, contingent on §11's interpreter-perf gate (was already the plan) |
-| 3DS | Adapt existing core, **exact project TBD by spike** | Panda3DS or Lime3DS/Azahar (decide in §11's spike) | GPL variant or Panda3DS's own license (verify at spike time) | **Open** — contingent on a no-JIT performance feasibility spike; may end up out of v1 scope or shipped outside the App Store if infeasible |
+| 3DS | Adapt existing core + **write an original no-JIT ARM11 backend** | Panda3DS preferred (see §6.3); Lime3DS/Azahar as fallback | Panda3DS's own license or GPL variant (verify at selection time) | Committed. The core adaptation is well-understood; the **CPU backend is original work** (§6.4) and is the project's hardest problem and its moat |
 
 Rationale for "adapt, don't write from scratch" across all three: this was
 already the right call for NDS alone given multi-year effort to reach
@@ -282,28 +287,56 @@ the "adapt vs. clean-room" decision is now settled — adapt melonDS.)
   behaviorally unchanged by the multi-system expansion, just now
   implemented behind the shared ABI (§5.1) instead of a bespoke app.
 
-### 6.3 3DS — highest risk, requires a dedicated feasibility spike before commitment
+### 6.3 3DS — the hard problem, and the reason the project is worth doing
 
-This is new relative to the original plan and is the least certain part of
-this document. Do not schedule 3DS work on the same timeline confidence as
-GBA/NDS until §11's spike answers the CPU performance question.
+This is the part of the plan with the least prior art to lean on, which is
+exactly why succeeding at it is worth something. Treat the CPU backend as
+original engineering work, not as a port.
 
-- **CPU:** dual-core ARM11 (MPE, @ 268 MHz combined) application cores plus
-  an ARM9 for legacy/DS-compatibility-mode paths. Every mature 3DS emulator
-  leans on a JIT (Citra's `dynarmic`) to hit playable speed; no iOS-legal
-  no-JIT ARM11 interpreter of adequate speed is currently known to exist.
-  Two paths to investigate in the spike:
-  1. A heavily hand-optimized threaded/block-cached interpreter (same
-     technique considered as NDS's fallback in §6.2, but starting from a
-     much higher CPU clock and instruction throughput requirement) —
-     unknown whether this closes the gap enough.
-  2. Evaluate whether Panda3DS's architecture (§3) offers a more
-     interpreter-friendly starting point than the Citra-lineage forks,
-     which were built assuming dynarec.
-  If neither closes the gap to real-time for a representative commercial
-  3DS title on target hardware, **3DS is not viable in v1 as currently
-  scoped** — the honest fallback is homebrew/lightweight-title-only support,
-  or deferring 3DS indefinitely and shipping GBA+NDS as the product.
+- **CPU:** dual-core ARM11 (MPCore, ~268 MHz) application cores plus an
+  ARM9 for legacy/DS-compatibility paths. Every mature 3DS emulator leans
+  on a JIT (Citra and its forks use `dynarmic`) to reach playable speed,
+  and their interpreter fallbacks are documented as far too slow for
+  commercial titles. No adequately fast no-JIT ARM11 interpreter is known
+  to exist today.
+  **The key insight is that this is not because the problem was attempted
+  and failed — it's because nobody needed to attempt it.** Every existing
+  3DS emulator targets desktop x86, where a JIT is freely available and
+  therefore the obvious answer; the interpreter paths in those projects are
+  correctness fallbacks that nobody spent optimization effort on. Emulating
+  ARM11 on Apple's ARM64 is a structurally different and much more
+  favorable problem than emulating ARM11 on x86, and that advantage is
+  essentially unexploited:
+  1. **Guest register file pinned in host registers.** ARM64 has 31
+     general-purpose registers; the ARM11 guest needs ~16 plus CPSR. The
+     entire guest register file can live permanently in host registers
+     across the interpreter's dispatch loop — no memory round-trip per
+     guest instruction. An x86-targeted interpreter structurally cannot do
+     this, which is a large part of why interpreters have historically been
+     considered hopeless for this class of workload.
+  2. **Near-1:1 instruction and flag semantics.** ARM64 and ARM11 share
+     condition-code semantics and much arithmetic behavior, so many guest
+     instructions collapse to a small handful of host instructions —
+     including the NZCV flag handling that is normally the single most
+     expensive part of emulating ARM on a non-ARM host.
+  3. **Block-cached threaded dispatch.** Decode each basic block once,
+     cache the resulting micro-op/handler-pointer sequence, and re-execute
+     the cached form — this removes decode cost, which typically dominates
+     naive interpretation, without generating any machine code at runtime
+     (so it needs no entitlement and is fully App Store legal).
+  4. **NEON for the vectorizable paths** (the PICA200 vertex pipeline where
+     it runs CPU-side, audio mixing, memory fills/copies).
+  Combined, these are the difference between "an interpreter is obviously
+  too slow" (true on x86) and "an interpreter is a real engineering
+  question" (the actual situation on Apple silicon). §6.4 describes how to
+  hedge this bet architecturally so that the answer never blocks shipping.
+- **Selecting the upstream core:** prefer **Panda3DS** as the starting
+  point over the Citra-lineage forks, specifically because it is a
+  from-scratch, more modern codebase with a cleaner separation around the
+  CPU backend, whereas Citra-derived code is built with the assumption that
+  `dynarmic` is present. Verify current license terms at selection time
+  (§2). Keep Lime3DS/Azahar as a fallback if Panda3DS's commercial-title
+  compatibility proves too far behind.
 - **GPU (PICA200):** a shader-pipeline GPU, meaningfully more complex than
   the NDS's fixed-function 3D GPU — requires translating PICA200 shader
   bytecode to something Metal can execute (analogous to what Citra/Lime3DS
@@ -322,6 +355,45 @@ GBA/NDS until §11's spike answers the CPU performance question.
   (pointing at general instructions for how console owners typically
   obtain their own key files, without the app performing extraction
   itself).
+
+### 6.4 The CPU backend must be swappable — this is the whole strategy
+
+The single most important architectural decision in this plan: **every
+core's CPU emulation sits behind an internal backend interface with at
+least two implementations** — a JIT-less interpreter and (where one exists
+upstream) a JIT — selected at build time.
+
+Why this matters more than it sounds:
+
+- **It decouples "ship first" from "run fast."** The App Store build uses
+  the interpreter backend and is fully compliant with Apple's rules. A
+  sideloaded / EU-alternative-marketplace / TestFlight-with-debugger build
+  can enable the JIT backend and run at full speed today, with no separate
+  codebase. Being first on the App Store and being fastest are then two
+  build configurations of one project rather than a choice between them.
+- **There is direct precedent for exactly this split.** UTM ships two
+  products from one lineage: UTM SE on the App Store using a *threaded
+  interpreter* precisely because JIT is unavailable there, and full UTM
+  with JIT distributed outside the App Store. The pattern is proven, both
+  technically and with respect to App Store review.
+- **It de-risks the §6.3 bet without abandoning it.** If the no-JIT ARM11
+  interpreter reaches, say, 70% of real-time on the target device rather
+  than 100%, that is a shipping product on the sideload channel *and* a
+  known, quantified gap to keep optimizing for the App Store build —
+  instead of a binary project-killing result. The work is never wasted and
+  the release train never blocks on the hardest research question.
+- **It benefits GBA and NDS too**, at near-zero extra cost: the same
+  interface lets the NDS core use melonDS's JIT on non-App-Store builds
+  while the App Store build runs the interpreter path from §6.2.
+
+Concretely: `Cores/Shared/include/cpu_backend.h` defines the interface
+(reset, run-N-cycles, register access, memory-bus callbacks, state
+serialize/restore); each core provides `cpu_interp.cpp` and, where
+applicable, `cpu_jit.cpp`; a build flag selects one. **Save states must
+serialize architectural state only** — never backend-internal caches — so
+a state saved on the App Store build loads on the sideloaded build and vice
+versa. Establish this interface in Phase 0, before any core integration
+work; retrofitting it later means touching every core.
 
 ## 7. Shared subsystem notes (apply across GBA/NDS/3DS, implemented once behind §5.1's ABI)
 
@@ -384,9 +456,10 @@ GBA/NDS until §11's spike answers the CPU performance question.
   Cores/
     GBA/                      C core, adapted from mGBA (MPL-2.0)
     NDS/                      C++ core, adapted from melonDS (GPLv3)
-    ThreeDS/                  C++ core, TBD by §11 spike — may not exist
-                               yet as real code until feasibility is proven
-    Shared/include/core_api.h Shared C ABI (§5.1) all three cores implement
+    ThreeDS/                  C++ core, Panda3DS-derived (§6.3), plus the
+                               original no-JIT ARM11 backend — the long pole
+    Shared/include/core_api.h    Shared C ABI (§5.1) all three cores implement
+    Shared/include/cpu_backend.h Swappable interpreter/JIT CPU interface (§6.4)
   App/                        iOS app (Xcode project / SwiftPM)
     EmulatorKit/              Swift package: core-agnostic bridge + thread mgmt
     UI/                       SwiftUI screens (library, in-game overlay, settings)
@@ -418,29 +491,48 @@ feasibility spike (§11) before any app shell work exists.
    simulator), extrapolate against a representative commercial game's
    per-frame instruction budget at 59.8 fps to decide plain-interpreter vs.
    block-cached-interpreter (§6.2).
-3. **3DS — the critical one:** before writing any 3DS core integration
-   code, spike a minimal dual-core ARM11 interpreter (even against a
-   trivial homebrew test binary, not a full commercial game) and measure
-   achievable throughput on target iOS hardware, then compare against the
-   known instruction/cycle budget existing 3DS emulators require for
-   playable speed on desktop with JIT enabled. If the gap looks
-   unclosable with interpreter-side optimization (NEON, block caching,
-   etc.), **stop and make an explicit go/no-go decision** (documented as an
-   ADR) before any further 3DS engineering investment — including GPU/
-   PICA200 work, which is wasted effort if the CPU side can't keep up
-   regardless.
+3. **3DS — the one that decides the shape of the product.** Before
+   committing to a full core integration, build a minimal ARM11
+   interpreter spike exercising the §6.3 techniques (pinned guest register
+   file, block-cached dispatch, native flag mapping) against a homebrew
+   test binary, and measure achievable throughput on target iOS hardware
+   against the per-frame instruction budget a representative commercial
+   title needs at 60 fps.
+
+   This is **not** a go/no-go on whether to build 3DS support — that's
+   settled. It answers *which product ships where*, and it has three
+   possible outcomes, all of them shippable thanks to §6.4:
+   - **At or above real-time:** 3DS ships in the App Store build. This is
+     the outright goal, and nobody has done it.
+   - **Meaningfully below real-time but playable** (roughly ≥60-70%): ship
+     3DS on the sideload/EU-marketplace channel with the JIT backend
+     immediately, keep the interpreter backend improving toward an App
+     Store release, and be transparent in the UI about which build does
+     what.
+   - **Far below real-time:** 3DS ships JIT-only outside the App Store
+     while interpreter work continues as an ongoing research track; GBA and
+     NDS carry the App Store listing in the meantime.
+
+   Run this spike **early and in parallel** with GBA/NDS work (§15), not
+   after — the answer determines release sequencing, and it's the number
+   the whole project's ambition rests on. Do the CPU spike before the
+   PICA200/Metal work regardless, since GPU effort is only meaningful once
+   the CPU throughput picture is known.
 
 ## 11. Phased roadmap
 
-**Phase 0 — Feasibility spikes (no shippable artifact)**
-- Stand up the shared core ABI (§5.1) skeleton.
+**Phase 0 — Foundations and spikes (no shippable artifact)**
+- Stand up the shared core ABI (§5.1) and the swappable CPU backend
+  interface (§6.4) — both must exist before any core integration, since
+  retrofitting either means touching all three cores.
 - Run the GBA sanity check and NDS feasibility gate (§10.1-2).
-- Run the **3DS feasibility spike** (§10.3) — this is the phase's most
-  important deliverable. Produce a written go/no-go ADR for 3DS before
-  Phase 1 begins for that system specifically (GBA/NDS can proceed
-  regardless of the 3DS outcome).
-- Exit criteria: GBA and NDS interpreter paths validated at real-time-
-  equivalent speed on target hardware; 3DS go/no-go decision documented.
+- Run the **3DS ARM11 interpreter spike** (§10.3) — the phase's most
+  important deliverable. Its output is a measured throughput number and a
+  release-sequencing decision (which channel 3DS ships on first), recorded
+  as an ADR.
+- Exit criteria: shared ABI + CPU backend interface defined; GBA and NDS
+  interpreter paths validated at real-time-equivalent speed on target
+  hardware; 3DS throughput measured and release sequencing decided.
 
 **Phase 1 — GBA core bring-up + iOS shell v0**
 - Adapt mGBA's core behind the shared ABI; bring up the app shell
@@ -456,12 +548,18 @@ feasibility spike (§11) before any app shell work exists.
 - Exit criteria: a commercial NDS game (including a 3D title) is playable
   end-to-end, reusing the Phase 1 shell largely unchanged.
 
-**Phase 3 — 3DS core bring-up (only if Phase 0's go/no-go was "go")**
-- Integrate the chosen 3DS core (Panda3DS or a Citra-lineage fork per
-  §6.3/§11's spike outcome) behind the shared ABI; PICA200-to-Metal
-  translation work; circle-pad/second-screen UI concerns.
-- Exit criteria: a homebrew or low-complexity commercial 3DS title runs at
-  acceptable speed on the chosen minimum-supported device tier.
+**Phase 3 — 3DS core bring-up** (starts in parallel with Phases 1-2, not
+after — it has the longest lead time and shares no critical-path resources
+with the GBA/NDS shell work once §6.4's interface exists)
+- Integrate the chosen 3DS core (§6.3) behind the shared ABI, with both
+  CPU backends wired per §6.4.
+- Build out the optimized no-JIT ARM11 interpreter from the Phase 0 spike
+  into a production backend; this is the project's long pole and should be
+  resourced accordingly.
+- PICA200 shader-to-Metal translation; circle-pad/second-screen UI.
+- Exit criteria: a commercial 3DS title is playable on the chosen
+  minimum-supported device tier on at least one distribution channel, with
+  the interpreter-backend throughput gap (if any) quantified and tracked.
 
 **Phase 4 — Compatibility hardening (per system)**
 - Automated compatibility suites (§12) per system, work through target
@@ -512,10 +610,10 @@ local wireless multiplayer, cloud save sync, per-game shaders/CRT filters,
 
 | Risk | System | Impact | Mitigation |
 |---|---|---|---|
-| No-JIT ARM11 performance may be inadequate for playable 3DS speed | 3DS | Project-critical for 3DS specifically | Phase 0 feasibility spike (§10.3) with an explicit go/no-go ADR before further 3DS investment |
-| PICA200 shader-to-Metal translation complexity | 3DS | High | Don't start until CPU feasibility is confirmed; budget as its own substantial workstream, not a rendering afterthought |
-| Nintendo legal action precedent (Citra C&D, 2024) | 3DS | Medium-high, business/legal | Treat as a known risk factor in timeline/appetite discussions; keep 3DS distributable outside the App Store as a fallback (§2) |
-| No comparable App Store precedent for 3DS emulators | 3DS | Medium | Plan TestFlight/EU-marketplace fallback distribution from the start rather than assuming App Store approval |
+| No-JIT ARM11 interpreter may not reach real-time | 3DS | High — but no longer project-critical | §6.4's swappable backend means a shortfall changes *which channel ships first*, not whether the product exists; §10.3 quantifies the gap early so it's a tracked number, not a surprise |
+| PICA200 shader-to-Metal translation complexity | 3DS | High | Sequence after the CPU throughput spike; budget as its own substantial workstream, not a rendering afterthought |
+| Nintendo legal action precedent (Citra C&D, 2024) | 3DS | Medium-high, business/legal | Known and accepted risk factor; keep 3DS distributable outside the App Store (§2, §6.4); preserve clean-room hygiene and avoid branding/monetization patterns that drew action previously |
+| No App Store precedent for 3DS emulators | 3DS | Medium risk / **the opportunity** | Being first is the goal (§1). Follow Guideline 4.7 precisely, submit GBA+NDS first to establish a review track record, and have the sideload/EU channel ready so review timing never blocks the product |
 | NDS interpreter-only performance ceiling | NDS | High (was project-critical in the original single-system plan) | Phase 0 feasibility gate (§10.2); fallback to block-cached interpreter |
 | GPL(v3)/MPL(2.0) combined licensing obligations across 3 cores in one binary | All | Medium, legal | Single combined compliance plan (source offer, notices) decided in Phase 0's ADR, not per-core ad hoc |
 | App Store review rejects GBA/NDS portion despite 2024 policy change | GBA/NDS | Low-medium | Follow Apple's emulator guidelines precisely; TestFlight fallback |
@@ -546,16 +644,17 @@ treat 3DS as needing more dedicated headcount than GBA+NDS did alone.
 
 ## 15. Immediate next steps
 
-1. Stand up the shared core ABI skeleton (§5.1) and the repo layout (§9).
-2. Adapt mGBA behind it first (lowest risk) — get *a* GBA homebrew ROM
-   booting headless on macOS as the project's smallest possible "hello
-   world."
-3. Run the NDS feasibility gate (§10.2) on real iPhone hardware, as
-   originally planned.
-4. Run the **3DS feasibility spike (§10.3) in parallel** with 1-3, since
-   its outcome materially changes the rest of the roadmap (§11 Phase 3
-   onward) and is the one result the team can't safely assume — start
-   gathering the answer as early as possible rather than discovering it
-   after GBA/NDS are already shipped.
+1. Stand up the shared core ABI (§5.1), the **swappable CPU backend
+   interface (§6.4)**, and the repo layout (§9). Both interfaces come
+   first — everything else is built on top of them.
+2. Adapt mGBA behind it (lowest risk) — get *a* GBA homebrew ROM booting
+   headless on macOS as the project's smallest possible "hello world."
+3. Run the NDS feasibility gate (§10.2) on real iPhone hardware.
+4. Start the **3DS ARM11 interpreter spike (§10.3) immediately and in
+   parallel** with 1-3. This is the number the entire ambition rests on,
+   nobody else has measured it, and it determines release sequencing —
+   get the answer early rather than discovering it after GBA/NDS ship.
+   Even a rough measurement in week one is worth more than a precise one
+   in month six.
 5. Write the combined licensing ADR (§2, §13) before any Phase 5/store-
    readiness work, so it isn't a late surprise.
