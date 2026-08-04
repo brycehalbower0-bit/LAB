@@ -14,6 +14,11 @@ is simply the obvious answer. Emulating ARM11 on Apple silicon is a
 materially better-shaped problem than emulating it on x86, and the plan is
 built around exploiting that advantage.
 
+**Device floor:** iPhone 15 (A16) and newer. On that floor the bar is
+locked native frame rate with headroom, sustained under thermal load —
+"more than reasonable speed" on the floor device, not just on the newest
+Pro. See PLAN.md §1.1 for the per-system performance targets.
+
 This directory is intentionally independent of Project Chronos (the rest of
 this repo). It does not share Chronos's package boundaries, roadmap, or
 phase gating; it exists here only because this repository is being used as

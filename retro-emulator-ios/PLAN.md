@@ -26,6 +26,52 @@ Per-system v1 scope:
   three, not because it's optional, but because GBA and NDS validate the
   shared shell cheaply while the hard core work proceeds in parallel.
 
+**Device floor and performance bar (decided):** the app supports
+**iPhone 15 and newer** — i.e. A16 Bionic as the minimum SoC — and on that
+floor the bar is not "runs" but **comfortably fast**: locked native frame
+rate with headroom, fast-forward where the system allows it, and no
+thermal collapse over a long play session. Concrete per-system targets
+live in §1.1. This is a deliberate trade: giving up older devices buys a
+very high guaranteed single-thread baseline, which is precisely the
+resource interpreter-based (no-JIT) emulation depends on, and it lets
+every optimization decision target one narrow, modern hardware window
+(A16 and up, all ARMv8.6+ with identical NEON capabilities) instead of a
+compatibility spread.
+
+### 1.1 Performance targets, per system, on the A16 floor
+
+What the floor buys us: the A16's two performance cores run at ~3.46 GHz
+with very wide out-of-order execution; A17 Pro and later are faster still.
+For emulation, the ratio of host clock to guest clock is the crude but
+honest yardstick:
+
+| System | Guest CPU | Host-to-guest clock ratio (A16 P-core) | v1 target on iPhone 15 |
+|---|---|---|---|
+| GBA | ARM7TDMI @ 16.78 MHz | ~200:1 | Locked 60 fps using a small fraction of one core; fast-forward ≥ 8×; effectively zero thermal footprint |
+| NDS | ARM9 @ 66 MHz + ARM7 @ 33 MHz | ~35:1 vs. the ARM9 | Locked 60 fps (59.8 Hz native) with the software 3D rasterizer, interpreter-only, sustained — plus fast-forward ≥ 2× |
+| 3DS | 2× ARM11 @ 268 MHz (+ ARM9 @ 134 MHz) | ~13:1 vs. one ARM11 core | **Full speed (60 fps in 60 fps titles) on the JIT build; full speed as the goal on the interpreter build**, with the measured gap (if any) tracked as the project's headline engineering number (§10.3) |
+
+The 3DS row is the demanding one, and the floor is what makes it credible:
+a ~13:1 clock ratio means the interpreter budget is roughly 13 host cycles
+per guest cycle *per emulated core* — tight but not absurd for a
+block-cached interpreter with the guest register file pinned in host
+registers (§6.3), and the second P-core carries the second ARM11 plus the
+audio/ARM9 load. On A17 Pro and later the ratio improves further. **These
+targets are commitments for the floor device, not aspirations for the
+newest one:** if a title holds 60 fps on an iPhone 17 Pro but not on an
+iPhone 15, it has not met the bar.
+
+Two engineering consequences follow directly:
+- **Thermals are part of the target, not a footnote.** "Fast" means fast
+  in minute 45, not minute 2. Sustained-load throttle testing on the
+  physical floor device is a standing part of the perf workflow (§12), and
+  efficiency work (fewer cycles per guest instruction) is preferred over
+  boost-dependent throughput.
+- **ProMotion is a bonus, not a dependency.** All three systems are ~60 Hz
+  natively; the baseline iPhone 15 has a 60 Hz display. Frame pacing must
+  be clean at 60 Hz first; 120 Hz devices get smoother fast-forward and
+  lower input latency as a free upgrade, never as a requirement.
+
 Cross-system non-goals for v1: any online play (GBA link cable via
 internet, NDS WFC, 3DS online services), local wireless multiplayer between
 devices, cloud save sync, and any DSiWare/eShop-only content.
@@ -495,10 +541,15 @@ work; retrofitting it later means touching every core.
   GBA/NDS given the CPU/GPU workload difference — a frame-skip/dynamic-
   resolution fallback is more likely to be *necessary* (not just a nice
   safety net) for 3DS.
-- **Minimum supported devices:** likely to differ per system — GBA/NDS can
-  probably support a lower floor than 3DS; decide each independently based
-  on the respective feasibility spikes (§11) rather than picking one
-  device floor for the whole app up front.
+- **Minimum supported devices: iPhone 15 / A16 Bionic, one floor for the
+  whole app (decided — §1.1).** One floor rather than per-system floors is
+  deliberate: it keeps the product story simple ("works great on iPhone 15
+  and up," no per-system asterisks), and the systems that could have
+  supported older hardware (GBA, NDS) lose nothing by having headroom.
+  A physical iPhone 15 — the floor device, deliberately not a Pro — is the
+  reference benchmark unit; every performance number quoted in this
+  project's docs and ADRs is a measurement on that device unless labeled
+  otherwise.
 
 ## 9. Repository / project structure
 
@@ -548,9 +599,12 @@ feasibility spike (§11) before any app shell work exists.
    committing to a full core integration, build a minimal ARM11
    interpreter spike exercising the §6.3 techniques (pinned guest register
    file, block-cached dispatch, native flag mapping) against a homebrew
-   test binary, and measure achievable throughput on target iOS hardware
-   against the per-frame instruction budget a representative commercial
-   title needs at 60 fps.
+   test binary, and measure achievable throughput **on a physical
+   iPhone 15 — the floor device (§1.1)** — against the per-frame
+   instruction budget a representative commercial title needs at 60 fps.
+   The §1.1 clock math says the budget is ~13 host cycles per guest cycle
+   per emulated ARM11 core on that device; the spike's job is to find out
+   how many the techniques above actually cost.
 
    This is **not** a go/no-go on whether to build 3DS support — that's
    settled. It answers *which product ships where*, and it has three
@@ -610,9 +664,9 @@ with the GBA/NDS shell work once §6.4's interface exists)
   into a production backend; this is the project's long pole and should be
   resourced accordingly.
 - PICA200 shader-to-Metal translation; circle-pad/second-screen UI.
-- Exit criteria: a commercial 3DS title is playable on the chosen
-  minimum-supported device tier on at least one distribution channel, with
-  the interpreter-backend throughput gap (if any) quantified and tracked.
+- Exit criteria: a commercial 3DS title runs at full speed on a physical
+  iPhone 15 on at least one distribution channel (§1.1), with the
+  interpreter-backend throughput gap (if any) quantified and tracked.
 
 **Phase 4 — Compatibility hardening (per system)**
 - Automated compatibility suites (§12) per system, work through target
@@ -652,8 +706,13 @@ local wireless multiplayer, cloud save sync, per-game shaders/CRT filters,
   rather than relying on eyeballing.
 - **Manual compatibility matrices:** one per system, tracking a target
   title list, boot/playable/complete status, known issues.
-- **Device matrix:** test each system on its own minimum-supported device
-  tier (§8) — do not assume GBA's low hardware floor generalizes to 3DS.
+- **Device matrix:** the floor is one device class for the whole app —
+  iPhone 15 / A16 (§1.1) — so the matrix is small: the physical floor
+  device (where every performance commitment is measured, including
+  sustained-load thermal runs of 45+ minutes, not just fresh-device
+  benchmarks), one current-generation device, and one iPad. Do not let
+  benchmarking drift to whatever newest phone is on the desk — a number
+  measured on a Pro-class device is not a result, it's an anecdote.
 - Never commit copyrighted ROM/BIOS/firmware/key files to the repository or
   CI fixtures for any system — public-domain/homebrew test ROMs only in
   the repo itself; keep any internal commercial-game testing corpus outside
