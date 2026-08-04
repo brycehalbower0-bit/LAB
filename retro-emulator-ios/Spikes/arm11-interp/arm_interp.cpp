@@ -249,7 +249,7 @@ static DecodedOp make_undef(u32 instr) {
     return d;
 }
 
-DecodedOp decode_one(u32 instr, u32 addr) {
+static DecodedOp decode_inner(u32 instr, u32 addr) {
     DecodedOp d;
     d.cond = instr >> 28;
     if (d.cond == 15) return make_undef(instr); // NV space unsupported
@@ -327,6 +327,9 @@ DecodedOp decode_one(u32 instr, u32 addr) {
     if (top == 2) {
         d.rn = (instr >> 16) & 15;
         d.rd = (instr >> 12) & 15;
+        // Writeback into r15 would be a hidden branch; out of spike scope.
+        if (d.rn == 15 && !(instr & (1u << 24) && !(instr & (1u << 21))))
+            return make_undef(instr);
         d.imm = instr & 0xFFFu;
         if (instr & (1u << 24)) d.flags |= OPF_PRE;
         if (instr & (1u << 23)) d.flags |= OPF_UP;
@@ -341,6 +344,15 @@ DecodedOp decode_one(u32 instr, u32 addr) {
     }
 
     return make_undef(instr);
+}
+
+DecodedOp decode_one(u32 instr, u32 addr) {
+    DecodedOp d = decode_inner(instr, addr);
+    // Everything that can redirect control flow, halt, or fault carries
+    // OPF_END; what remains is straight-line, and if also unconditional it
+    // needs no per-op checks at all.
+    if (d.cond == 14 && !(d.flags & OPF_END)) d.flags |= OPF_FAST;
+    return d;
 }
 
 // ---- naive driver: fetch/decode/execute every instruction ----------------
@@ -365,8 +377,8 @@ u64 NaiveInterp::run(Cpu &cpu, u64 max_instrs) {
 
 // ---- cached driver: decode blocks once, re-execute the decoded form ------
 
-const std::vector<DecodedOp> &CachedInterp::get_block(const Cpu &cpu,
-                                                      u32 addr) {
+const std::vector<DecodedOp> &BlockCache::get_block(const Cpu &cpu,
+                                                    u32 addr) {
     MapEntry &entry = map_[(addr >> 2) & (kMapSize - 1)];
     if (entry.tag == addr) return *entry.block;
 
@@ -391,7 +403,7 @@ const std::vector<DecodedOp> &CachedInterp::get_block(const Cpu &cpu,
 u64 CachedInterp::run(Cpu &cpu, u64 max_instrs) {
     u64 executed = 0;
     while (!cpu.halted && executed < max_instrs) {
-        const std::vector<DecodedOp> &block = get_block(cpu, cpu.r[15]);
+        const std::vector<DecodedOp> &block = cache_.get_block(cpu, cpu.r[15]);
         for (const DecodedOp &d : block) {
             ++executed;
             if (cond_passed(cpu, d.cond)) {
@@ -404,6 +416,41 @@ u64 CachedInterp::run(Cpu &cpu, u64 max_instrs) {
             }
             cpu.r[15] += 4;
         }
+    }
+    return executed;
+}
+
+// ---- threaded driver: no per-op checks on the straight-line fast path ----
+
+u64 ThreadedInterp::run(Cpu &cpu, u64 max_instrs) {
+    u64 executed = 0;
+    while (!cpu.halted && executed < max_instrs) {
+        const std::vector<DecodedOp> &block = cache_.get_block(cpu, cpu.r[15]);
+        const DecodedOp *ops = block.data();
+        const size_t len = block.size();
+        size_t i = 0;
+        for (; i < len; ++i) {
+            const DecodedOp &d = ops[i];
+            if (d.flags & OPF_FAST) {
+                d.fn(cpu, d);
+                cpu.r[15] += 4;
+                continue;
+            }
+            if (cond_passed(cpu, d.cond)) {
+                d.fn(cpu, d);
+                if (cpu.branched) {
+                    cpu.branched = false;
+                    ++i;
+                    break;
+                }
+                if (cpu.halted) {
+                    ++i;
+                    break;
+                }
+            }
+            cpu.r[15] += 4;
+        }
+        executed += i;
     }
     return executed;
 }

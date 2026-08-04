@@ -89,6 +89,8 @@ void test_flags_and_carry() {
     const Cpu naive = run_program<NaiveInterp>(ram, code);
     const Cpu cached = run_program<CachedInterp>(ram, code);
     expect_same_state(naive, cached, "flags_and_carry");
+    const Cpu threaded = run_program<ThreadedInterp>(ram, code);
+    expect_same_state(naive, threaded, "flags_and_carry (threaded)");
     CHECK(naive.r[3] == 0, "adds result: got 0x%08X", naive.r[3]);
     CHECK(naive.r[4] == 1, "adc did not pick up carry: got 0x%08X",
           naive.r[4]);
@@ -119,6 +121,8 @@ void test_sub_borrow_and_conditions() {
     const Cpu naive = run_program<NaiveInterp>(ram, code);
     const Cpu cached = run_program<CachedInterp>(ram, code);
     expect_same_state(naive, cached, "sub_borrow");
+    const Cpu threaded = run_program<ThreadedInterp>(ram, code);
+    expect_same_state(naive, threaded, "sub_borrow (threaded)");
     CHECK(naive.r[1] == 0xFFFFFFFBu, "subs result: got 0x%08X", naive.r[1]);
     CHECK(naive.r[2] == (1 + 4 + 8), "conditional mask wrong: got %u",
           naive.r[2]);
@@ -143,6 +147,8 @@ void test_shift_special_cases() {
     const Cpu naive = run_program<NaiveInterp>(ram, code);
     const Cpu cached = run_program<CachedInterp>(ram, code);
     expect_same_state(naive, cached, "shift_special");
+    const Cpu threaded = run_program<ThreadedInterp>(ram, code);
+    expect_same_state(naive, threaded, "shift_special (threaded)");
     CHECK(naive.r[1] == 0, "LSR #32: got 0x%08X", naive.r[1]);
     CHECK(naive.r[2] == 0xFFFFFFFFu, "ASR #32: got 0x%08X", naive.r[2]);
     CHECK(naive.r[4] == 1 && naive.c == false,
@@ -180,6 +186,8 @@ void test_addressing_modes() {
     const Cpu naive = run_program<NaiveInterp>(ram, code);
     const Cpu cached = run_program<CachedInterp>(ram, code);
     expect_same_state(naive, cached, "addressing_modes");
+    const Cpu threaded = run_program<ThreadedInterp>(ram, code);
+    expect_same_state(naive, threaded, "addressing_modes (threaded)");
     CHECK(naive.r[3] == 0x11, "word roundtrip: got 0x%08X", naive.r[3]);
     CHECK(naive.r[4] == 0xAB, "byte roundtrip: got 0x%08X", naive.r[4]);
     CHECK(naive.r[5] == 0x104, "post-index writeback: got 0x%08X",
@@ -190,7 +198,7 @@ void test_addressing_modes() {
 void test_kernels() {
     for (const kernels::Kernel &k : kernels::all()) {
         const u32 n = 1000;
-        GuestRam ram_a, ram_b;
+        GuestRam ram_a, ram_b, ram_c;
 
         Cpu cpu_naive;
         ram_a.attach(cpu_naive);
@@ -204,15 +212,28 @@ void test_kernels() {
         CachedInterp cached;
         const u64 executed_cached = cached.run(cpu_cached, 1ull << 32);
 
+        Cpu cpu_threaded;
+        ram_c.attach(cpu_threaded);
+        kernels::load(k, cpu_threaded, n);
+        ThreadedInterp threaded;
+        const u64 executed_threaded = threaded.run(cpu_threaded, 1ull << 32);
+
         CHECK(cpu_naive.halted && !cpu_naive.error, "%s naive errored",
               k.name.c_str());
         CHECK(cpu_cached.halted && !cpu_cached.error, "%s cached errored",
               k.name.c_str());
+        CHECK(cpu_threaded.halted && !cpu_threaded.error,
+              "%s threaded errored", k.name.c_str());
         CHECK(executed_naive == executed_cached,
               "%s executed-count mismatch: %llu vs %llu", k.name.c_str(),
               (unsigned long long)executed_naive,
               (unsigned long long)executed_cached);
+        CHECK(executed_naive == executed_threaded,
+              "%s threaded executed-count mismatch: %llu vs %llu",
+              k.name.c_str(), (unsigned long long)executed_naive,
+              (unsigned long long)executed_threaded);
         expect_same_state(cpu_naive, cpu_cached, k.name.c_str());
+        expect_same_state(cpu_naive, cpu_threaded, k.name.c_str());
 
         const u32 want = k.expected_r0(n);
         CHECK(cpu_naive.r[0] == want, "%s r0: got 0x%08X want 0x%08X",

@@ -72,6 +72,9 @@ enum : u8 {
     OPF_UP = 1 << 3,     // load/store: offset added (else subtracted)
     OPF_WB = 1 << 4,     // load/store: writeback
     OPF_END = 1 << 5,    // decode marked this the end of a basic block
+    // Unconditional and provably straight-line (cannot write r15, halt, or
+    // fault): the threaded driver executes these with zero per-op checks.
+    OPF_FAST = 1 << 6,
 };
 
 struct DecodedOp {
@@ -96,21 +99,21 @@ struct NaiveInterp {
     u64 run(Cpu &cpu, u64 max_instrs);
 };
 
-// Backend 2: decode basic blocks once, cache the micro-op sequences,
-// re-execute the cached form. No machine code is ever generated.
-struct CachedInterp {
-    u64 run(Cpu &cpu, u64 max_instrs);
+// Decoded-block store shared by the cached backends: direct-mapped fast
+// lookup keyed by block start address (the shape a production block cache
+// takes), backed by an unordered_map (node-based, so value addresses are
+// stable across rehash).
+class BlockCache {
+  public:
+    static constexpr size_t kMaxBlockLen = 64;
+
+    const std::vector<DecodedOp> &get_block(const Cpu &cpu, u32 addr);
     void clear() {
         blocks_.clear();
         map_.assign(map_.size(), MapEntry{});
     }
 
   private:
-    static constexpr size_t kMaxBlockLen = 64;
-
-    // Fast path: direct-mapped lookup keyed by block start address, the shape
-    // a production block cache takes. unordered_map is the slow backing store
-    // (node-based, so value addresses are stable across rehash).
     struct MapEntry {
         u32 tag = 0xFFFFFFFFu;
         const std::vector<DecodedOp> *block = nullptr;
@@ -118,8 +121,28 @@ struct CachedInterp {
     static constexpr size_t kMapSize = 4096;
     std::vector<MapEntry> map_ = std::vector<MapEntry>(kMapSize);
     std::unordered_map<u32, std::vector<DecodedOp>> blocks_;
+};
 
-    const std::vector<DecodedOp> &get_block(const Cpu &cpu, u32 addr);
+// Backend 2: decode basic blocks once, cache the micro-op sequences,
+// re-execute the cached form. No machine code is ever generated.
+struct CachedInterp {
+    u64 run(Cpu &cpu, u64 max_instrs);
+    void clear() { cache_.clear(); }
+
+  private:
+    BlockCache cache_;
+};
+
+// Backend 3: block-cached plus threaded-style dispatch — ops that decode
+// proved unconditional and straight-line (OPF_FAST) execute with no per-op
+// condition/branch/halt checks, and instruction accounting is batched per
+// block instead of per op. Still zero runtime code generation.
+struct ThreadedInterp {
+    u64 run(Cpu &cpu, u64 max_instrs);
+    void clear() { cache_.clear(); }
+
+  private:
+    BlockCache cache_;
 };
 
 } // namespace arm

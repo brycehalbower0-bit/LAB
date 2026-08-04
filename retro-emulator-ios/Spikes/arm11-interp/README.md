@@ -8,12 +8,15 @@ everything here is App Store-legal by construction.
 ## What it is
 
 - `arm_interp.{h,cpp}` — an ARM-state (32-bit) ARMv6-subset interpreter
-  with two backends over one decoder:
+  with three backends over one decoder:
   - **naive** — fetch/decode/execute every instruction, every time;
   - **block-cached** — decode basic blocks once into cached micro-op
     (handler-pointer + operands) sequences, re-execute the cached form,
     fronted by a direct-mapped block map (the shape a production backend
-    takes).
+    takes);
+  - **threaded** — block-cached plus zero-per-op-check execution for ops
+    that decode proved unconditional and straight-line (`OPF_FAST`), with
+    per-block instruction accounting.
 - `asm_helpers.h` — instruction encoders so tests/benchmarks are written
   as assembled guest programs.
 - `kernels.h` — three workloads stressing the three interpreter cost
@@ -52,32 +55,46 @@ playable thresholds are lower — but 268 ends the argument.
 
 ## Directional results — Linux container, shared x86_64 server core
 
-Worst possible host for this workload: unknown/virtualized clock, and none
-of the ARM64 structural advantages apply. Even so:
+Worst possible host for this workload: unknown/virtualized clock (run-to-
+run variance is large — compare within a run, not across runs), and none
+of the ARM64 structural advantages apply. Representative run:
 
-| kernel      | naive MIPS | block-cached MIPS | speedup | cached vs 1:1 bar |
-|-------------|-----------:|------------------:|--------:|------------------:|
-| alu_mix     |       80.4 |             242.9 |   3.02× |             0.91× |
-| mem_stream  |       81.1 |             221.3 |   2.73× |             0.83× |
-| call_heavy  |       88.2 |             204.7 |   2.32× |             0.76× |
+| kernel      | naive | block-cached | threaded | best vs 1:1 bar |
+|-------------|------:|-------------:|---------:|----------------:|
+| alu_mix     | 122.6 |        274.5 |    303.5 |           1.13× |
+| mem_stream  | 109.4 |        255.8 |    295.9 |           1.10× |
+| call_heavy  | 127.0 |        204.1 |    195.0 |           0.76× |
+
+(guest MIPS; bar = 268)
+
+Dual-core interleave (two guest CPUs, one host thread, threaded backend):
+switching every 64 instructions costs ~10% versus every 512+; at 512+ the
+combined throughput matches the solo number, i.e. the interleave itself is
+nearly free at coarse quanta. The production design pins each ARM11 to its
+own host P-core and syncs at timing boundaries, so this is an upper bound
+on scheduling tax.
 
 Takeaways:
 
-1. **Block caching alone buys ~2.3–3×.** Decode elimination is the single
+1. **Block caching alone buys ~2–3×.** Decode elimination is the single
    largest lever, exactly as predicted in PLAN.md §6.3.
-2. **Already ~0.8–0.9× of the 1:1 bar on a shared x86 VM core**, before a
-   single ARM64-specific optimization exists. The A16 P-core is faster
-   than this host per-clock and per-core, and every remaining big lever is
-   ARM64-only:
+2. **Threaded dispatch clears the 1:1 bar on straight-line and memory
+   workloads — on a shared x86 VM core**, before a single ARM64-specific
+   optimization exists. The remaining big levers are all ARM64-only:
    - guest register file pinned in host registers (impossible on x86,
      natural on ARM64's 31 GPRs);
    - guest NZCV mapped to host NZCV instead of four bools;
-   - computed-goto / threaded dispatch tuned for the host branch predictor;
    - NEON for the memory/vector paths.
-3. Nothing here yet approximates MMIO cost, timing/scheduling overhead, or
-   dual-core interleave — the production backend carries those; the spike's
-   job was to establish that the *dispatch engine* isn't hopeless without a
-   JIT. It isn't.
+3. **Branchy code is the weak spot, and it's understood.** On `call_heavy`
+   (blocks of 1–4 instructions), threaded dispatch gains nothing — block
+   *transition* cost dominates, not per-op cost. The known fix is block
+   linking/chaining (each block caches its successor, skipping the map
+   lookup), deliberately out of spike scope; it goes in the production
+   backend.
+4. Nothing here yet approximates MMIO cost or timing/scheduling against
+   peripherals — the production backend carries those; the spike's job was
+   to establish that the *dispatch engine* isn't hopeless without a JIT.
+   It isn't.
 
 **Next measurement step:** run this exact harness on a physical iPhone 15
 (macOS first for the toolchain, then an iOS target — no UI needed). That
