@@ -1,0 +1,59 @@
+name: retro-emulator
+
+on:
+  push:
+    branches: [main]
+    paths: ["retro-emulator-ios/**"]
+  pull_request:
+    paths: ["retro-emulator-ios/**"]
+
+concurrency:
+  group: retro-emulator-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  foundations:
+    name: Cores · Spike · Contract tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: retro-emulator-ios
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+
+  app-shell:
+    name: Expo shell · typecheck · vendored-spike drift
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: retro-emulator-ios/App
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: retro-emulator-ios/App/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      # The native module carries a vendored copy of Spikes/arm11-interp;
+      # fail if someone edited one side without re-syncing.
+      - name: Vendored spike is in sync
+        run: |
+          npm run sync-spike
+          git diff --exit-code -- modules/spike-bench/ios/cpp
