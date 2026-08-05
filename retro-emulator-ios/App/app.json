@@ -10,7 +10,9 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.brycehalbower0.emulab",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "UIFileSharingEnabled": true,
+        "LSSupportsOpeningDocumentsInPlace": true
       }
     },
     "android": {

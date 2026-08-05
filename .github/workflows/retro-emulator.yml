@@ -2,7 +2,9 @@ name: retro-emulator
 
 on:
   push:
-    branches: [main]
+    # claude/** so the no-local-compiler workflow (Windows dev box, no PR
+    # flow) still gets its C/C++ compile gate before anything reaches EAS.
+    branches: [main, "claude/**"]
     paths: ["retro-emulator-ios/**"]
   pull_request:
     paths: ["retro-emulator-ios/**"]
@@ -51,9 +53,11 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
-      # The native module carries a vendored copy of Spikes/arm11-interp;
-      # fail if someone edited one side without re-syncing.
-      - name: Vendored spike is in sync
+      # The native modules carry vendored copies of canonical sources
+      # (Spikes/arm11-interp, Cores/Shared, Tests/CoreTests); fail if
+      # someone edited one side without re-syncing.
+      - name: Vendored copies are in sync
         run: |
           npm run sync-spike
-          git diff --exit-code -- modules/spike-bench/ios/cpp
+          npm run sync-emu-core
+          git diff --exit-code -- modules/spike-bench/ios/cpp modules/emu-core/ios/cpp

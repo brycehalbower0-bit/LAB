@@ -6,6 +6,8 @@
     "expo": "~57.0.10",
     "expo-dev-client": "~57.0.10",
     "expo-device": "~57.0.1",
+    "expo-document-picker": "~57.0.1",
+    "expo-file-system": "~57.0.1",
     "expo-status-bar": "~57.0.1",
     "react": "19.2.3",
     "react-native": "0.86.2"
@@ -20,6 +22,7 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "sync-spike": "node scripts/sync-spike.mjs",
+    "sync-emu-core": "node scripts/sync-emu-core.mjs",
     "typecheck": "tsc --noEmit"
   },
   "private": true
