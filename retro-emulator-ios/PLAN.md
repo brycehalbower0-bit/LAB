@@ -48,8 +48,8 @@ honest yardstick:
 | System | Guest CPU | Host-to-guest clock ratio (A16 P-core) | v1 target on iPhone 15 |
 |---|---|---|---|
 | GBA | ARM7TDMI @ 16.78 MHz | ~200:1 | Locked 60 fps using a small fraction of one core; fast-forward ≥ 8×; effectively zero thermal footprint |
-| NDS | ARM9 @ 66 MHz + ARM7 @ 33 MHz | ~35:1 vs. the ARM9 | Locked 60 fps (59.8 Hz native) with the software 3D rasterizer, interpreter-only, sustained — plus fast-forward ≥ 2× |
-| 3DS | 2× ARM11 @ 268 MHz (+ ARM9 @ 134 MHz) | ~13:1 vs. one ARM11 core | **Full speed (60 fps in 60 fps titles) on the JIT build; full speed as the goal on the interpreter build**, with the measured gap (if any) tracked as the project's headline engineering number (§10.3) |
+| NDS | ARM9 @ 66 MHz + ARM7 @ 33 MHz | ~35:1 vs. the ARM9 | Locked 60 fps (59.8 Hz native) with the software 3D rasterizer, interpreter-only, sustained — plus fast-forward ≥ 2.5× |
+| 3DS | 2× ARM11 @ 268 MHz (+ ARM9 @ 134 MHz) | ~13:1 vs. one ARM11 core | **Full speed (60 fps in 60 fps titles) on the JIT build; full speed as the goal on the interpreter build**, with the measured gap (if any) tracked as the project's headline engineering number (§10.3). Fast-forward 2× is a **stretch goal, not a commitment**: ADR 0002 measured the spike's worst-case kernel at 1.875× on an iPhone 17 Pro — already short of 2× on hardware faster than the floor, before real-core overhead — so this stands only as recorded intent until floor-device data says otherwise |
 
 The 3DS row is the demanding one, and the floor is what makes it credible:
 a ~13:1 clock ratio means the interpreter budget is roughly 13 host cycles
