@@ -4,7 +4,8 @@
 // ARM11 benchmark, still needed for the ADR 0002 floor-device run).
 
 import * as DocumentPicker from "expo-document-picker";
-import { Directory, File } from "expo-file-system";
+import { File } from "expo-file-system";
+import { unzipSync } from "fflate";
 import { useCallback, useEffect, useState } from "react";
 import {
   Alert,
@@ -35,6 +36,7 @@ export default function LibraryScreen({
     const entries = romsDir
       .list()
       .filter((e): e is File => e instanceof File)
+      .filter((f) => f.name.toLowerCase().endsWith(".gba"))
       .map((f) => ({ name: f.name, uri: f.uri }))
       .sort((a, b) => a.name.localeCompare(b.name));
     setRoms(entries);
@@ -49,10 +51,35 @@ export default function LibraryScreen({
     if (result.canceled || !result.assets?.length) return;
     try {
       ensureDirs();
+      const imported: string[] = [];
       for (const asset of result.assets) {
-        new File(asset.uri).copy(new Directory(romsDir));
+        const source = new File(asset.uri);
+        if (asset.name.toLowerCase().endsWith(".zip")) {
+          // ROMs usually arrive zipped; extract .gba entries here so the
+          // library only ever holds raw ROMs.
+          const zipped = unzipSync(new Uint8Array(await source.arrayBuffer()));
+          for (const [entryName, bytes] of Object.entries(zipped)) {
+            const clean = entryName.split("/").pop() ?? entryName;
+            if (!clean.toLowerCase().endsWith(".gba") || bytes.length === 0) continue;
+            const dest = new File(romsDir, clean);
+            if (dest.exists) dest.delete();
+            dest.write(bytes);
+            imported.push(clean);
+          }
+        } else {
+          const dest = new File(romsDir, asset.name);
+          if (dest.exists) dest.delete();
+          source.copy(dest);
+          imported.push(asset.name);
+        }
       }
       refresh();
+      if (imported.length === 0) {
+        Alert.alert(
+          "Nothing imported",
+          "No .gba file found. Import a Game Boy Advance ROM (.gba), zipped or not.",
+        );
+      }
     } catch (e) {
       Alert.alert("Import failed", String(e));
     }
