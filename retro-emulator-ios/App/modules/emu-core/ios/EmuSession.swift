@@ -152,7 +152,11 @@ final class EmuSession: NSObject {
     guard !running else { return }
 
     guard let api, let core else { throw EmuError(message: "no core loaded") }
-    let readAudio = api.pointee.read_audio
+    // Direct vtable calls auto-unwrap, but a let-bound copy of a C fn
+    // pointer is a plain optional — unwrap once here.
+    guard let readAudio = api.pointee.read_audio else {
+      throw EmuError(message: "core has no read_audio")
+    }
     try audio.start(sampleRate: Double(desc.audio_sample_rate)) { buffer, maxFrames in
       readAudio(core, buffer, maxFrames) // wait-free per ABI; audio-thread safe
     }
