@@ -37,3 +37,10 @@ export function statePathFor(romFileName: string, slot: number): string {
     `${statesDir.uri}/${encodeURIComponent(baseName(romFileName))}.slot${slot}.state`,
   );
 }
+
+/** Auto-resume snapshot written when leaving the game screen. */
+export function autoStatePathFor(romFileName: string): string {
+  return toPosixPath(
+    `${statesDir.uri}/${encodeURIComponent(baseName(romFileName))}.auto.state`,
+  );
+}

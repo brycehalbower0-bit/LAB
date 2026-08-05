@@ -38,6 +38,11 @@ public class EmuCoreModule: Module {
       EmuSession.shared.setButtons(UInt32(truncatingIfNeeded: mask))
     }
 
+    // 1.0 = native speed; clamped to PLAN §1.1's GBA fast-forward range.
+    Function("setFastForward") { (multiplier: Double) in
+      EmuSession.shared.fastForward = max(1.0, min(8.0, multiplier))
+    }
+
     AsyncFunction("saveState") { (path: String) in
       try EmuSession.shared.saveState(path: path)
     }

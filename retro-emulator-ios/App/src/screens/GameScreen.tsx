@@ -13,8 +13,16 @@ import {
   type StyleProp,
   type ViewStyle,
 } from "react-native";
+import { File } from "expo-file-system";
 import { Buttons, EmuCore, EmuSurfaceView, type Diagnostics } from "../emu";
-import { savePathFor, statePathFor, toPosixPath } from "../paths";
+import {
+  autoStatePathFor,
+  savePathFor,
+  statePathFor,
+  toPosixPath,
+} from "../paths";
+
+const FF_STEPS = [1, 2, 4, 8];
 
 interface Rom {
   name: string;
@@ -48,7 +56,22 @@ export default function GameScreen({
       try {
         await EmuCore.loadRom(toPosixPath(rom.uri), savePathFor(rom.name));
         await EmuCore.start();
-        if (!cancelled) setStatus("running");
+        if (cancelled) return;
+        setStatus("running");
+        // Auto-resume: offer the snapshot taken when the game was last
+        // left. The in-game save (battery) is untouched either way.
+        const autoPath = autoStatePathFor(rom.name);
+        if (new File(`file://${autoPath}`).exists) {
+          Alert.alert("Continue?", "Pick up where you left off last time?", [
+            { text: "Start fresh", style: "cancel" },
+            {
+              text: "Resume",
+              onPress: () => {
+                EmuCore.loadState(autoPath).catch(() => {});
+              },
+            },
+          ]);
+        }
       } catch (e) {
         if (!cancelled) {
           setError(String(e));
@@ -58,7 +81,11 @@ export default function GameScreen({
     })();
     return () => {
       cancelled = true;
+      EmuCore.setFastForward(1);
       (async () => {
+        try {
+          await EmuCore.saveState(autoStatePathFor(rom.name));
+        } catch {}
         try {
           await EmuCore.flushSave();
         } finally {
@@ -67,6 +94,13 @@ export default function GameScreen({
       })();
     };
   }, [rom.uri, rom.name]);
+
+  const [ffIndex, setFfIndex] = useState(0);
+  const cycleFastForward = () => {
+    const next = (ffIndex + 1) % FF_STEPS.length;
+    setFfIndex(next);
+    EmuCore.setFastForward(FF_STEPS[next]);
+  };
 
   const press = (bit: number, down: boolean) => {
     mask.current = down ? mask.current | bit : mask.current & ~bit;
@@ -121,6 +155,11 @@ export default function GameScreen({
         {pad("L", Buttons.L, styles.shoulder)}
         <Pressable style={styles.menuButton} onPress={onExit}>
           <Text style={styles.menuText}>Exit</Text>
+        </Pressable>
+        <Pressable style={styles.menuButton} onPress={cycleFastForward}>
+          <Text style={[styles.menuText, ffIndex > 0 && styles.ffActive]}>
+            {FF_STEPS[ffIndex]}×
+          </Text>
         </Pressable>
         {pad("R", Buttons.R, styles.shoulder)}
       </View>
@@ -221,6 +260,7 @@ const styles = StyleSheet.create({
   shoulder: { width: 90, height: 36, borderRadius: 8 },
   menuButton: { padding: 8 },
   menuText: { color: "#818cf8", fontSize: 15 },
+  ffActive: { color: "#34d399", fontWeight: "700" },
   mainControls: {
     flexDirection: "row",
     justifyContent: "space-between",

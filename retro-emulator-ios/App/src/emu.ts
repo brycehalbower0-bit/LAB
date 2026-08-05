@@ -32,6 +32,7 @@ interface EmuCoreModule {
   stop(): Promise<void>;
   unload(): Promise<void>;
   setInput(mask: number): void;
+  setFastForward(multiplier: number): void;
   saveState(path: string): Promise<void>;
   loadState(path: string): Promise<void>;
   flushSave(): Promise<void>;

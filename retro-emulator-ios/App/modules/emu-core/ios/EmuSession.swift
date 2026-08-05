@@ -51,6 +51,21 @@ final class EmuSession: NSObject {
 
   private let inputLock = NSLock()
   private var pendingButtons: UInt32 = 0
+  private var controllerButtons: UInt32 = 0
+
+  // Frame pacing: guest time follows wall time so the 59.7275 Hz GBA
+  // doesn't drift against the 60 Hz display link (the surplus otherwise
+  // slowly overfills the audio ring). fastForward multiplies the rate.
+  private var paceStart: CFTimeInterval = 0
+  private var paceFramesRun: Double = 0
+  var fastForward: Double = 1.0 {
+    didSet { resetPacing() }
+  }
+
+  private func resetPacing() {
+    paceStart = 0
+    paceFramesRun = 0
+  }
 
   private let audio = EmuAudio()
 
@@ -70,6 +85,8 @@ final class EmuSession: NSObject {
                    name: UIApplication.willResignActiveNotification, object: nil)
     nc.addObserver(self, selector: #selector(appDidBecomeActive),
                    name: UIApplication.didBecomeActiveNotification, object: nil)
+    // Physical controller support (GameController framework): deferred
+    // by project direction; controllerButtons stays 0 until then.
   }
 
   func reportError(_ message: String) {
@@ -216,7 +233,31 @@ final class EmuSession: NSObject {
   }
 
   @objc private func tick(_ link: CADisplayLink) {
-    if paused { return }
+    if paused {
+      resetPacing()
+      return
+    }
+
+    // Guest frames due by wall clock (native_fps × fastForward). A big
+    // gap (stall, debugger, backgrounding) re-anchors instead of
+    // sprinting to catch up.
+    let now = CACurrentMediaTime()
+    if paceStart == 0 {
+      paceStart = now
+      paceFramesRun = 0
+    }
+    let rate = desc.native_fps > 0 ? desc.native_fps * fastForward : 60.0
+    let due = (now - paceStart) * rate
+    var todo = Int(due - paceFramesRun)
+    let cap = max(4, Int(fastForward) * 2)
+    if todo > cap {
+      paceStart = now
+      paceFramesRun = 0
+      todo = cap
+    }
+    if todo <= 0 { return }
+    paceFramesRun += Double(todo)
+
     coreLock.lock()
     guard let api, let core else {
       coreLock.unlock()
@@ -224,13 +265,15 @@ final class EmuSession: NSObject {
     }
 
     inputLock.lock()
-    let buttons = pendingButtons
+    let buttons = pendingButtons | controllerButtons
     inputLock.unlock()
     var input = EmuInputState(buttons: buttons, touch_down: 0, touch_x: 0,
                               touch_y: 0, analog_x: 0, analog_y: 0)
     api.pointee.set_input(core, &input)
 
-    api.pointee.run_frame(core)
+    for _ in 0..<todo {
+      api.pointee.run_frame(core)
+    }
 
     let screenCount = Int(desc.screen_count)
     frameLock.lock()
@@ -262,10 +305,9 @@ final class EmuSession: NSObject {
     frameLock.unlock()
     coreLock.unlock()
 
-    framesRun &+= 1
-    let now = CACurrentMediaTime()
+    framesRun &+= UInt64(todo)
     if fpsWindowStart == 0 { fpsWindowStart = now }
-    fpsWindowFrames += 1
+    fpsWindowFrames += todo
     if now - fpsWindowStart >= 1.0 {
       measuredFps = Double(fpsWindowFrames) / (now - fpsWindowStart)
       fpsWindowStart = now
