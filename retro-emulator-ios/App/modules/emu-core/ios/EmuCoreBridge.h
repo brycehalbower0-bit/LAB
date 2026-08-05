@@ -19,6 +19,9 @@ extern "C" {
 /* Test/diagnostic core (Tests/CoreTests/null_core.c, vendored). */
 const EmuCoreApi *emu_null_api(void);
 
+/* GBA core (Cores/GBA/gba_core.c over vendored mGBA, MPL-2.0). */
+const EmuCoreApi *emu_gba_api(void);
+
 #ifdef __cplusplus
 }
 #endif

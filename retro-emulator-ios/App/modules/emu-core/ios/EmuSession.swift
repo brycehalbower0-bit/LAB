@@ -85,9 +85,9 @@ final class EmuSession: NSObject {
 
   func loadRom(romPath: String, savePath: String?) throws -> [String: Any] {
     let romData = try Data(contentsOf: URL(fileURLWithPath: romPath))
-    // Slice 1: only the null core exists. Slice 2 selects by extension
-    // (.gba -> emu_gba_api()).
-    return try load(api: emu_null_api(), romData: romData, savePath: savePath)
+    let ext = (romPath as NSString).pathExtension.lowercased()
+    let api = ext == "gba" ? emu_gba_api() : emu_null_api()
+    return try load(api: api, romData: romData, savePath: savePath)
   }
 
   private func load(api newApi: UnsafePointer<EmuCoreApi>?, romData: Data, savePath: String?) throws -> [String: Any] {

@@ -5,14 +5,16 @@
 // and UI only; emulation is native (PLAN.md ADR 0001-D7).
 
 import { useState } from "react";
-import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import LibraryScreen from "./src/screens/LibraryScreen";
 import NullTestScreen from "./src/screens/NullTestScreen";
 import BenchmarkScreen from "./src/screens/BenchmarkScreen";
+import GameScreen from "./src/screens/GameScreen";
 
 type Screen =
   | { name: "library" }
+  | { name: "game"; rom: { name: string; uri: string } }
   | { name: "diagnostics" }
   | { name: "nulltest" }
   | { name: "benchmark" };
@@ -26,12 +28,13 @@ export default function App() {
       {screen.name === "library" && (
         <LibraryScreen
           onOpenDiagnostics={() => setScreen({ name: "diagnostics" })}
-          onOpenRom={(rom) =>
-            Alert.alert(
-              "Coming soon",
-              `${rom.name} is imported. The GBA core lands in the next build.`,
-            )
-          }
+          onOpenRom={(rom) => setScreen({ name: "game", rom })}
+        />
+      )}
+      {screen.name === "game" && (
+        <GameScreen
+          rom={screen.rom}
+          onExit={() => setScreen({ name: "library" })}
         />
       )}
       {screen.name === "diagnostics" && (
