@@ -13,7 +13,7 @@ import {
   type StyleProp,
   type ViewStyle,
 } from "react-native";
-import { Buttons, EmuCore, EmuSurfaceView } from "../emu";
+import { Buttons, EmuCore, EmuSurfaceView, type Diagnostics } from "../emu";
 import { savePathFor, statePathFor, toPosixPath } from "../paths";
 
 interface Rom {
@@ -32,7 +32,15 @@ export default function GameScreen({
     "loading",
   );
   const [error, setError] = useState<string | null>(null);
+  const [diag, setDiag] = useState<Diagnostics | null>(null);
   const mask = useRef(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      EmuCore.getDiagnostics().then(setDiag).catch(() => {});
+    }, 2000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -100,6 +108,11 @@ export default function GameScreen({
         {status === "loading" && <Text style={styles.overlayMsg}>Loading…</Text>}
         {status === "error" && (
           <Text style={styles.overlayError}>{error ?? "failed"}</Text>
+        )}
+        {diag && status === "running" && (
+          <Text style={styles.fpsBadge}>
+            {diag.fps.toFixed(1)} fps · {diag.audioShortfalls} drops
+          </Text>
         )}
       </View>
 
@@ -178,6 +191,18 @@ const styles = StyleSheet.create({
     color: "#f87171",
     fontSize: 13,
     paddingHorizontal: 24,
+  },
+  fpsBadge: {
+    position: "absolute",
+    top: 4,
+    right: 8,
+    color: "#34d399",
+    fontSize: 11,
+    fontVariant: ["tabular-nums"],
+    backgroundColor: "#000000aa",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
   },
   control: {
     backgroundColor: "#1f2937",
