@@ -5,9 +5,9 @@ on:
     # claude/** so the no-local-compiler workflow (Windows dev box, no PR
     # flow) still gets its C/C++ compile gate before anything reaches EAS.
     branches: [main, "claude/**"]
-    paths: ["retro-emulator-ios/**"]
+    paths: ["retro-emulator-ios/**", ".github/workflows/retro-emulator.yml"]
   pull_request:
-    paths: ["retro-emulator-ios/**"]
+    paths: ["retro-emulator-ios/**", ".github/workflows/retro-emulator.yml"]
 
 concurrency:
   group: retro-emulator-${{ github.ref }}
