@@ -24,13 +24,23 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Configure
-        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 
       - name: Build
         run: cmake --build build
 
       - name: Test
         run: ctest --test-dir build --output-on-failure
+
+      # Ground truth for the EmuCore podspec: exactly which mGBA sources
+      # compile and with which defines. Read from the run log when the
+      # vendored module's file list or flags need updating.
+      - name: Dump mGBA compile manifest
+        run: |
+          echo "=== mgba compiled sources ==="
+          jq -r '.[].file' build/compile_commands.json | grep "Cores/GBA" | sed "s|.*/Cores/GBA/||" | sort
+          echo "=== mgba compile defines ==="
+          jq -r '.[] | select(.file | contains("Cores/GBA")) | .command' build/compile_commands.json | grep -oE '\-D[A-Za-z0-9_=]+' | sort -u
 
   app-shell:
     name: Expo shell · typecheck · vendored-spike drift
