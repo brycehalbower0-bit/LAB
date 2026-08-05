@@ -15,7 +15,7 @@ copyleft wants).
 
 Pruned from the snapshot (not used by the LIBMGBA_ONLY static-library
 build this project does): `cinema/`, `doc/`, `res/`, `tools/`, `opt/`,
-`src/platform/`, `src/script/`, and the optional third-party bundles
+`src/platform/` (except `src/platform/cmake/`, which configure needs), `src/script/`, and the optional third-party bundles
 `discord-rpc`, `libpng`, `lzma`, `sqlite3`, `zlib` (kept: `blip_buf`,
 `inih`). No source file was modified.
 
