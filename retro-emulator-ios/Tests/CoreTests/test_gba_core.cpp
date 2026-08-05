@@ -114,6 +114,9 @@ int main() {
     // --- audio: frames accrue at ~549/video frame ---
     {
         std::vector<int16_t> audio(4096 * 2);
+        // Drain the ring backlog from the boot frames first.
+        while (api->read_audio(core, audio.data(), 4096) != 0) {
+        }
         uint32_t total = 0;
         for (int i = 0; i < 10; i++) {
             api->run_frame(core);
