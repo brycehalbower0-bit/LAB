@@ -7,3 +7,8 @@ add_executable(core_api_tests test_core_api.cpp)
 target_link_libraries(core_api_tests PRIVATE null_core)
 
 add_test(NAME core_api_contract COMMAND core_api_tests)
+
+add_executable(gba_core_tests test_gba_core.cpp)
+target_link_libraries(gba_core_tests PRIVATE gba_core)
+
+add_test(NAME gba_core_contract COMMAND gba_core_tests)

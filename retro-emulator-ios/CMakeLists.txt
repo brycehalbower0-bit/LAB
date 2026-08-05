@@ -11,5 +11,6 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 enable_testing()
+add_subdirectory(Cores/GBA)
 add_subdirectory(Spikes/arm11-interp)
 add_subdirectory(Tests/CoreTests)
