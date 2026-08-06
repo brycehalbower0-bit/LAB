@@ -4,7 +4,8 @@
 
 #include "common/arch.h"
 #include "video_core/shader/shader_interpreter.h"
-#if CITRA_ARCH(x86_64) || CITRA_ARCH(arm64)
+// retro-emulator-ios patch: shader JIT optional (ADR 0001-D3)
+#if (CITRA_ARCH(x86_64) || CITRA_ARCH(arm64)) && defined(CITRA_ENABLE_SHADER_JIT)
 #include "video_core/shader/shader_jit.h"
 #endif
 #include "video_core/shader/shader.h"
@@ -12,7 +13,8 @@
 namespace Pica {
 
 std::unique_ptr<ShaderEngine> CreateEngine(bool use_jit) {
-#if CITRA_ARCH(x86_64) || CITRA_ARCH(arm64)
+// retro-emulator-ios patch: shader JIT optional (ADR 0001-D3)
+#if (CITRA_ARCH(x86_64) || CITRA_ARCH(arm64)) && defined(CITRA_ENABLE_SHADER_JIT)
     if (use_jit) {
         return std::make_unique<Shader::JitEngine>();
     }

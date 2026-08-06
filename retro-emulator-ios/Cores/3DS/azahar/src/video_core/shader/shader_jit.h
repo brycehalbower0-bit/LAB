@@ -5,7 +5,8 @@
 #pragma once
 
 #include "common/arch.h"
-#if CITRA_ARCH(x86_64) || CITRA_ARCH(arm64)
+// retro-emulator-ios patch: shader JIT optional (ADR 0001-D3)
+#if (CITRA_ARCH(x86_64) || CITRA_ARCH(arm64)) && defined(CITRA_ENABLE_SHADER_JIT)
 
 #include <memory>
 #include <unordered_map>

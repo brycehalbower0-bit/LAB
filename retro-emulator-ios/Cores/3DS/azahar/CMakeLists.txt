@@ -34,6 +34,7 @@ option(ENABLE_LIBRETRO "Build as a LibRetro core" OFF)
 # retro-emulator-ios patch: dynarmic optional so no-JIT builds contain
 # zero runtime code generation (ADR 0001-D3).
 option(ENABLE_DYNARMIC "Enable the dynarmic JIT backend" ON)
+option(ENABLE_SHADER_JIT "Enable the PICA shader JIT" ON)
 
 # Some submodules like to pick their own default build type if not specified.
 # Make sure we default to Release build type always, unless the generator has custom types.

@@ -85,12 +85,7 @@ add_library(video_core STATIC EXCLUDE_FROM_ALL
     shader/shader.h
     shader/shader_interpreter.cpp
     shader/shader_interpreter.h
-    shader/shader_jit.cpp
     shader/shader_jit.h
-    shader/shader_jit_a64_compiler.cpp
-    shader/shader_jit_a64_compiler.h
-    shader/shader_jit_x64_compiler.cpp
-    shader/shader_jit_x64_compiler.h
     texture/etc1.cpp
     texture/etc1.h
     texture/texture_decode.cpp
@@ -217,12 +212,23 @@ create_target_directory_groups(video_core)
 target_link_libraries(video_core PUBLIC citra_common citra_core)
 target_link_libraries(video_core PRIVATE Boost::serialization dds-ktx json-headers nihstro-headers tsl::robin_map)
 
-if ("x86_64" IN_LIST ARCHITECTURE)
-    target_link_libraries(video_core PUBLIC xbyak)
-endif()
-
-if ("arm64" IN_LIST ARCHITECTURE)
-    target_link_libraries(video_core PUBLIC oaknut)
+# retro-emulator-ios patch: shader JIT optional (ADR 0001-D3 — no
+# runtime codegen in App Store builds; the shader interpreter remains).
+if (ENABLE_SHADER_JIT)
+    target_sources(video_core PRIVATE
+        shader/shader_jit.cpp
+        shader/shader_jit_a64_compiler.cpp
+        shader/shader_jit_a64_compiler.h
+        shader/shader_jit_x64_compiler.cpp
+        shader/shader_jit_x64_compiler.h
+    )
+    target_compile_definitions(video_core PUBLIC CITRA_ENABLE_SHADER_JIT)
+    if ("x86_64" IN_LIST ARCHITECTURE)
+        target_link_libraries(video_core PUBLIC xbyak)
+    endif()
+    if ("arm64" IN_LIST ARCHITECTURE)
+        target_link_libraries(video_core PUBLIC oaknut)
+    endif()
 endif()
 
 if (CITRA_USE_PRECOMPILED_HEADERS)
