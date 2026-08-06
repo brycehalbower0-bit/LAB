@@ -35,6 +35,9 @@ struct EmuCore {
     std::unique_ptr<u8[]> rom_copy;
     u32 rom_size = 0;
     bool save_dirty = false;
+    // melonDS emits ARGB-in-u32 (Qt Format_RGB32; R in bits 16-23);
+    // the ABI wants RGBA bytes — get_video swizzles into these.
+    std::unique_ptr<uint32_t[]> video[2];
 };
 
 // Called by nds_platform.cpp's WriteNDSSave hook (userdata is EmuCore*).
@@ -161,8 +164,10 @@ void nds_run_frame(EmuCore *core) {
     }
 }
 
-void nds_get_video(const EmuCore *core, uint32_t screen, EmuVideoBuffer *out) {
+void nds_get_video(const EmuCore *core_c, uint32_t screen,
+                   EmuVideoBuffer *out) {
     std::memset(out, 0, sizeof(*out));
+    EmuCore *core = const_cast<EmuCore *>(core_c);
     if (!core->nds || screen > 1) {
         return;
     }
@@ -171,7 +176,16 @@ void nds_get_video(const EmuCore *core, uint32_t screen, EmuVideoBuffer *out) {
     if (!fb) {
         return;
     }
-    out->pixels = fb;
+    if (!core->video[screen]) {
+        core->video[screen] = std::make_unique<uint32_t[]>(NDS_W * NDS_H);
+    }
+    uint32_t *dst = core->video[screen].get();
+    for (size_t i = 0; i < (size_t)NDS_W * NDS_H; i++) {
+        uint32_t px = fb[i];
+        dst[i] = 0xFF000000u | ((px >> 16) & 0xFFu) | (px & 0x0000FF00u) |
+                 ((px & 0xFFu) << 16);
+    }
+    out->pixels = dst;
     out->width = NDS_W;
     out->height = NDS_H;
     out->stride_pixels = NDS_W;
