@@ -1,6 +1,9 @@
 name: retro-emulator
 
 on:
+  # Manual trigger: path filters mean an empty commit can't retrigger a
+  # run after an Actions outage.
+  workflow_dispatch:
   push:
     # claude/** so the no-local-compiler workflow (Windows dev box, no PR
     # flow) still gets its C/C++ compile gate before anything reaches EAS.
