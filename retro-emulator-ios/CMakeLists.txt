@@ -12,5 +12,6 @@ endif()
 
 enable_testing()
 add_subdirectory(Cores/GBA)
+add_subdirectory(Cores/NDS)
 add_subdirectory(Spikes/arm11-interp)
 add_subdirectory(Tests/CoreTests)
