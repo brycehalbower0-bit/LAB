@@ -560,6 +560,12 @@ endif()
 
 add_subdirectory(src)
 
+# retro-emulator-ios patch: shared-ABI adapter + contract test (built
+# inside azahar's project because its CMake requires being root).
+if (EMU_SHARED_ABI_ADAPTER)
+    add_subdirectory(${CMAKE_SOURCE_DIR}/../adapter adapter)
+endif()
+
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT citra_meta)
 
 # Create target for outputting distributable bundles.

@@ -55,10 +55,18 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Configure (dyncom, no JIT, no GL, no keyblob)
-        run: cmake -S Cores/3DS/azahar -B build3ds -C Cores/3DS/no-jit-headless.cmake -DCMAKE_BUILD_TYPE=Release
+        run: cmake -S Cores/3DS/azahar -B build3ds -C Cores/3DS/no-jit-headless.cmake -DCMAKE_BUILD_TYPE=Release -DEMU_SHARED_ABI_ADAPTER=ON
 
-      - name: Build citra_core
-        run: cmake --build build3ds --target citra_core -j $(nproc)
+      - name: Build adapter + contract test
+        run: cmake --build build3ds --target c3ds_core_tests -j $(nproc)
+
+      - name: Run 3DS contract test
+        run: ./build3ds/adapter/c3ds_core_tests
+
+      - name: Verify zero key material in binaries
+        run: |
+          ! grep -rl "default_keys" build3ds/adapter/c3ds_core_tests
+          echo "no embedded keyblob symbols"
 
   app-shell:
     name: Expo shell · typecheck · vendored-spike drift
