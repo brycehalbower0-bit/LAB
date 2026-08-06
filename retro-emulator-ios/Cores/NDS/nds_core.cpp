@@ -138,6 +138,7 @@ EmuStatus nds_load_rom(EmuCore *core, const uint8_t *data, size_t size) {
     if (nds->NeedsDirectBoot()) {
         nds->SetupDirectBoot("rom.nds");
     }
+    nds->Start(); // sets Running; RunFrame idles without it
 
     core->nds = std::move(nds);
     return EMU_OK;
@@ -151,6 +152,7 @@ void nds_reset(EmuCore *core) {
     if (core->nds->NeedsDirectBoot()) {
         core->nds->SetupDirectBoot("rom.nds");
     }
+    core->nds->Start();
 }
 
 void nds_run_frame(EmuCore *core) {
