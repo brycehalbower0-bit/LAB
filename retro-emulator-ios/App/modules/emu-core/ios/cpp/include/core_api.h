@@ -167,6 +167,15 @@ typedef struct EmuCoreApi {
     size_t    (*save_data_size)(const EmuCore *core);
     EmuStatus (*save_data_read)(const EmuCore *core, uint8_t *out, size_t size);
     EmuStatus (*save_data_write)(EmuCore *core, const uint8_t *data, size_t size);
+
+    /*
+     * OPTIONAL (may be NULL; added after the v1 vtable — cores using
+     * positional initializers without it get NULL here, which is valid).
+     * Path-based ROM loading for cores whose loaders are file-backed and
+     * whose content is too large to double-buffer in memory (3DS: up to
+     * 4 GB). The shell prefers this over load_rom when non-NULL.
+     */
+    EmuStatus (*load_rom_path)(EmuCore *core, const char *path);
 } EmuCoreApi;
 
 #ifdef __cplusplus
