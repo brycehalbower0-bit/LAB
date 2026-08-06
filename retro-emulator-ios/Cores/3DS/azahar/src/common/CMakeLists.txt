@@ -153,11 +153,13 @@ create_target_directory_groups(citra_common)
 target_link_libraries(citra_common PUBLIC fmt library-headers microprofile Boost::boost Boost::serialization Boost::iostreams)
 target_link_libraries(citra_common PRIVATE cryptopp zstd)
 
-if ("x86_64" IN_LIST ARCHITECTURE)
+# retro-emulator-ios patch: xbyak/oaknut only exist when a JIT does
+# (ADR 0001-D3); their headers here serve JIT-only code paths.
+if ((ENABLE_DYNARMIC OR ENABLE_SHADER_JIT) AND ("x86_64" IN_LIST ARCHITECTURE))
     target_link_libraries(citra_common PRIVATE xbyak)
 endif()
 
-if ("arm64" IN_LIST ARCHITECTURE)
+if ((ENABLE_DYNARMIC OR ENABLE_SHADER_JIT) AND ("arm64" IN_LIST ARCHITECTURE))
     target_link_libraries(citra_common PRIVATE oaknut)
 endif()
 
