@@ -36,7 +36,7 @@ export default function LibraryScreen({
     const entries = romsDir
       .list()
       .filter((e): e is File => e instanceof File)
-      .filter((f) => /\.(gba|nds)$/i.test(f.name))
+      .filter((f) => /\.(gba|nds|3ds|cci|cxi|3dsx|app|elf)$/i.test(f.name))
       .map((f) => ({ name: f.name, uri: f.uri }))
       .sort((a, b) => a.name.localeCompare(b.name));
     setRoms(entries);
@@ -60,7 +60,7 @@ export default function LibraryScreen({
           const zipped = unzipSync(new Uint8Array(await source.arrayBuffer()));
           for (const [entryName, bytes] of Object.entries(zipped)) {
             const clean = entryName.split("/").pop() ?? entryName;
-            if (!/\.(gba|nds)$/i.test(clean) || bytes.length === 0) continue;
+            if (!/\.(gba|nds|3ds|cci|cxi|3dsx|app|elf)$/i.test(clean) || bytes.length === 0) continue;
             const dest = new File(romsDir, clean);
             if (dest.exists) dest.delete();
             dest.write(bytes);
@@ -77,7 +77,10 @@ export default function LibraryScreen({
       if (imported.length === 0) {
         Alert.alert(
           "Nothing imported",
-          "No .gba or .nds file found. Import a ROM, zipped or not.",
+          "No supported ROM found — GBA (.gba), DS (.nds), or 3DS " +
+            "(.3ds/.cci/.cxi/.3dsx), zipped or not.\n\n" +
+            "3DS dumps must already be decrypted: this app never handles " +
+            "console keys.",
         );
       }
     } catch (e) {

@@ -49,6 +49,11 @@ public class EmuCoreModule: Module {
       EmuSession.shared.setTouch(x: x, y: y, down: down)
     }
 
+    // Circle pad, axes in -1...1 (3DS).
+    Function("setAnalog") { (x: Double, y: Double) in
+      EmuSession.shared.setAnalog(x: x, y: y)
+    }
+
     AsyncFunction("saveState") { (path: String) in
       try EmuSession.shared.saveState(path: path)
     }

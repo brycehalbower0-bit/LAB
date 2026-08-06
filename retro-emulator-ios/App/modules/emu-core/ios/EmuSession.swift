@@ -55,6 +55,8 @@ final class EmuSession: NSObject {
   private var touchDown = false
   private var touchX: UInt16 = 0
   private var touchY: UInt16 = 0
+  private var analogX: Int16 = 0
+  private var analogY: Int16 = 0
 
   // Frame pacing: guest time follows wall time so the 59.7275 Hz GBA
   // doesn't drift against the 60 Hz display link (the surplus otherwise
@@ -228,6 +230,17 @@ final class EmuSession: NSObject {
     inputLock.unlock()
   }
 
+  /// Circle pad / analog stick, each axis -1.0...1.0 (3DS; ABI carries
+  /// it as -32768...32767).
+  func setAnalog(x: Double, y: Double) {
+    let clampedX = max(-1.0, min(1.0, x))
+    let clampedY = max(-1.0, min(1.0, y))
+    inputLock.lock()
+    analogX = Int16(clampedX * 32767.0)
+    analogY = Int16(clampedY * 32767.0)
+    inputLock.unlock()
+  }
+
   /// Guest-pixel coordinates on the touch screen; down=false releases.
   func setTouch(x: Int, y: Int, down: Bool) {
     inputLock.lock()
@@ -286,9 +299,11 @@ final class EmuSession: NSObject {
     let tDown: Int32 = touchDown ? 1 : 0
     let tX = touchX
     let tY = touchY
+    let aX = analogX
+    let aY = analogY
     inputLock.unlock()
     var input = EmuInputState(buttons: buttons, touch_down: tDown, touch_x: tX,
-                              touch_y: tY, analog_x: 0, analog_y: 0)
+                              touch_y: tY, analog_x: aX, analog_y: aY)
     api.pointee.set_input(core, &input)
 
     for _ in 0..<todo {

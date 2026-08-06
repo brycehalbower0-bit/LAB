@@ -34,6 +34,8 @@ interface EmuCoreModule {
   setInput(mask: number): void;
   setFastForward(multiplier: number): void;
   setTouch(x: number, y: number, down: boolean): void;
+  /** Circle pad axes, each -1..1 (3DS). */
+  setAnalog(x: number, y: number): void;
   saveState(path: string): Promise<void>;
   loadState(path: string): Promise<void>;
   flushSave(): Promise<void>;

@@ -14,6 +14,7 @@ import {
   type ViewStyle,
 } from "react-native";
 import { File } from "expo-file-system";
+import CirclePad from "../components/CirclePad";
 import {
   Buttons,
   EmuCore,
@@ -145,22 +146,26 @@ export default function GameScreen({
   }
 
   const isDual = (desc?.screenCount ?? 1) === 2;
+  // 3DS: two screens, top wider than bottom (400x240 vs 320x240).
+  const is3ds = isDual && (desc?.width ?? 0) > 256;
 
   // NDS bottom screen: touches map to guest pixels via setTouch.
   const touchEvent = (e: { nativeEvent: { locationX: number; locationY: number } }, down: boolean) => {
     const { w, h } = touchLayout.current;
-    const gx = Math.round((e.nativeEvent.locationX / w) * 256);
-    const gy = Math.round((e.nativeEvent.locationY / h) * 192);
+    const bw = is3ds ? 320 : 256;
+    const bh = is3ds ? 240 : 192;
+    const gx = Math.round((e.nativeEvent.locationX / w) * bw);
+    const gy = Math.round((e.nativeEvent.locationY / h) * bh);
     EmuCore.setTouch(
-      Math.max(0, Math.min(255, gx)),
-      Math.max(0, Math.min(191, gy)),
+      Math.max(0, Math.min(bw - 1, gx)),
+      Math.max(0, Math.min(bh - 1, gy)),
       down,
     );
   };
 
   return (
     <View style={styles.container}>
-      <View style={isDual ? styles.screenAreaDualTop : styles.screenArea}>
+      <View style={[isDual ? styles.screenAreaDualTop : styles.screenArea, is3ds && styles.top3ds]}>
         <EmuSurfaceView screenIndex={0} style={styles.surface} />
         {status === "loading" && <Text style={styles.overlayMsg}>Loading…</Text>}
         {status === "error" && (
@@ -174,7 +179,7 @@ export default function GameScreen({
       </View>
       {isDual && (
         <View
-          style={styles.screenAreaDual}
+          style={[styles.screenAreaDual, is3ds && styles.bottom3ds]}
           onLayout={(e) => {
             touchLayout.current = {
               w: e.nativeEvent.layout.width,
@@ -207,6 +212,7 @@ export default function GameScreen({
       </View>
 
       <View style={styles.mainControls}>
+        {is3ds && <CirclePad />}
         {/* D-pad */}
         <View style={styles.dpad}>
           <View style={styles.dpadRow}>{pad("▲", Buttons.UP, styles.dpadKey)}</View>
@@ -263,6 +269,8 @@ const styles = StyleSheet.create({
   screenArea: { width: "100%", aspectRatio: 240 / 160, marginTop: 50 },
   screenAreaDual: { width: "100%", aspectRatio: 256 / 192 },
   screenAreaDualTop: { width: "100%", aspectRatio: 256 / 192, marginTop: 40 },
+  top3ds: { aspectRatio: 400 / 240 },
+  bottom3ds: { aspectRatio: 320 / 240, width: "80%", alignSelf: "center" },
   faceRow: { flexDirection: "row", alignItems: "center", gap: 10 },
   faceSmall: { width: 48, height: 48, borderRadius: 24, backgroundColor: "#374151" },
   surface: { width: "100%", height: "100%" },
