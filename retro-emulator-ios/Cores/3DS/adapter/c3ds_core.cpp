@@ -28,7 +28,7 @@
 #include "core/core.h"
 #include "core/frontend/applets/default_applets.h"
 #include "core/frontend/emu_window.h"
-#include "core/gpu.h"
+#include "video_core/gpu.h"
 #include "video_core/renderer_software/renderer_software.h"
 
 #include "core_api.h"
