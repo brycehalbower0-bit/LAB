@@ -77,7 +77,7 @@ std::vector<uint8_t> make_test_rom() {
         0xE3A02080, // mov r2, #0x80
         0xE5C02240, // strb r2, [r0, #0x240] (VRAMCNT_A = enable, LCDC)
         0xE3A03406, // mov r3, #0x06000000
-        0xE3833480, // orr r3, r3, #0x00800000 (LCDC window: 0x06800000)
+        0xE3833880, // orr r3, r3, #0x00800000 (LCDC window: 0x06800000)
         0xE59F4004, // ldr r4, [pc, #4]      (literal below)
         0xE5834000, // str r4, [r3]
         0xEAFFFFFE, // b .
