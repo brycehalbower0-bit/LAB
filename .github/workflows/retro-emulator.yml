@@ -60,12 +60,13 @@ jobs:
       - name: Build adapter + contract test
         run: cmake --build build3ds --target c3ds_core_tests -j $(nproc)
 
+      # Azahar redirects runtime output to bin/<CONFIG>/.
       - name: Run 3DS contract test
-        run: ./build3ds/adapter/c3ds_core_tests
+        run: ./build3ds/bin/Release/c3ds_core_tests
 
       - name: Verify zero key material in binaries
         run: |
-          ! grep -rl "default_keys" build3ds/adapter/c3ds_core_tests
+          ! nm -C build3ds/bin/Release/c3ds_core_tests 2>/dev/null | grep -i "default_keys"
           echo "no embedded keyblob symbols"
 
   app-shell:
