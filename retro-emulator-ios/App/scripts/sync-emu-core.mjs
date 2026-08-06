@@ -164,12 +164,16 @@ const ndsCompiled = new Set([
   "src/Savestate.cpp", "src/Utils.cpp", "src/Wifi.cpp", "src/WifiAP.cpp",
   "src/blip-buf/blip_buf.c", "src/fatfs/ff.c", "src/fatfs/ffsystem.c",
   "src/fatfs/ffunicode.c", "src/sha1/sha1.c",
+  // NOTE: teakra_c.cpp / disassembler_c.cpp are a separate CMake target
+  // melonDS never links (they appear in compile_commands.json because it
+  // lists configured targets, not built ones — and they don't compile
+  // against this teakra fork). Excluded deliberately.
   "src/teakra/src/ahbm.cpp", "src/teakra/src/apbp.cpp",
   "src/teakra/src/btdmp.cpp", "src/teakra/src/disassembler.cpp",
-  "src/teakra/src/disassembler_c.cpp", "src/teakra/src/dma.cpp",
+  "src/teakra/src/dma.cpp",
   "src/teakra/src/memory_interface.cpp", "src/teakra/src/mmio.cpp",
   "src/teakra/src/parser.cpp", "src/teakra/src/processor.cpp",
-  "src/teakra/src/teakra.cpp", "src/teakra/src/teakra_c.cpp",
+  "src/teakra/src/teakra.cpp",
   "src/teakra/src/timer.cpp", "src/tiny-AES-c/aes.c",
   "src/xxhash/xxhash.c",
 ]);
