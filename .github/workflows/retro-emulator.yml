@@ -14,7 +14,9 @@ on:
 
 concurrency:
   group: retro-emulator-${{ github.ref }}
-  cancel-in-progress: true
+  # The 3DS core build takes ~20 min; cancelling in-progress runs meant
+  # any push during that window threw the result away. Let runs finish.
+  cancel-in-progress: false
 
 jobs:
   foundations:
