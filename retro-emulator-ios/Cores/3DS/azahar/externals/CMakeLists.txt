@@ -375,8 +375,14 @@ else()
     target_include_directories(httplib INTERFACE ./httplib)
     target_disable_warnings(httplib)
 endif()
-target_compile_options(httplib INTERFACE -DCPPHTTPLIB_OPENSSL_SUPPORT)
-target_link_libraries(httplib INTERFACE ${OPENSSL_LIBRARIES})
+# retro-emulator-ios patch: SSL support in httplib requires libressl,
+# carried only when web services are on. Without it the HLE http:C
+# service still compiles; guest HTTPS requests fail at runtime, which
+# matches v1's offline scope (PLAN §1 non-goals).
+if (ENABLE_WEB_SERVICE)
+    target_compile_options(httplib INTERFACE -DCPPHTTPLIB_OPENSSL_SUPPORT)
+    target_link_libraries(httplib INTERFACE ${OPENSSL_LIBRARIES})
+endif()
 
 if (UNIX AND NOT APPLE)
     add_subdirectory(gamemode EXCLUDE_FROM_ALL)
