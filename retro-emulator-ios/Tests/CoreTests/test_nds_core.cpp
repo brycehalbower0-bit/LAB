@@ -38,9 +38,13 @@ void put32(std::vector<uint8_t> &v, size_t off, uint32_t x) {
 // melonDS's direct boot: ARM9/ARM7 rom offset, entry, load address,
 // size; header size. Everything else stays zero.
 std::vector<uint8_t> make_test_rom() {
-    const uint32_t arm9_off = 0x4000;
+    // Keep binaries clear of 0x4000-0x7FFF: that's the cart secure area,
+    // which melonDS Key1-decrypts and overwrites with 0xE7FFDEFF guard
+    // words when the plaintext doesn't decrypt (exactly what happens to
+    // a hand-built ROM).
+    const uint32_t arm9_off = 0x8000;
     const uint32_t arm9_load = 0x02000000;
-    const uint32_t arm7_off = 0x8000;
+    const uint32_t arm7_off = 0xA000;
     const uint32_t arm7_load = 0x037F8000; // shared WRAM region for ARM7
     std::vector<uint8_t> rom(0x10000, 0);
 
