@@ -131,7 +131,8 @@ EmuStatus nds_load_rom(EmuCore *core, const uint8_t *data, size_t size) {
     args.JIT = std::nullopt; // interpreter only (ADR 0001-D3)
     args.OutputSampleRate = (double)NDS_SAMPLE_RATE;
 
-    auto nds = std::make_unique<melonDS::NDS>(std::move(args), 0, core);
+    auto nds = std::make_unique<melonDS::NDS>(std::move(args),
+                                              static_cast<void *>(core));
     nds->SetNDSCart(std::move(cart));
     nds->Reset();
     if (nds->NeedsDirectBoot()) {
