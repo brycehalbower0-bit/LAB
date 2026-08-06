@@ -395,6 +395,11 @@ endif()
 
 # Use system tsl::robin_map if available (otherwise we fallback to version bundled with dynarmic)
 find_package(tsl-robin-map QUIET)
+# retro-emulator-ios patch: with dynarmic excluded (ADR 0001-D3) the
+# bundled copy is gone; vendored robin-map v1.3.0 fills in.
+if (NOT TARGET tsl::robin_map)
+    add_subdirectory(externals/robin-map EXCLUDE_FROM_ALL)
+endif()
 
 # Platform-specific library requirements
 # ======================================
