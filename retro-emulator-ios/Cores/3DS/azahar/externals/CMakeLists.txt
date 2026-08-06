@@ -328,14 +328,16 @@ else()
 endif()
 
 # OpenSSL
-if (USE_SYSTEM_OPENSSL)
+# retro-emulator-ios patch: SSL only serves web services; the vendored
+# snapshot doesn't carry libressl (v1 non-goal).
+if (ENABLE_WEB_SERVICE AND USE_SYSTEM_OPENSSL)
     find_package(OpenSSL 1.1)
     if (OPENSSL_FOUND)
         set(OPENSSL_LIBRARIES OpenSSL::SSL OpenSSL::Crypto)
     endif()
 endif()
 
-if (NOT OPENSSL_FOUND)
+if (ENABLE_WEB_SERVICE AND NOT OPENSSL_FOUND)
     # LibreSSL
     set(LIBRESSL_SKIP_INSTALL ON CACHE BOOL "")
     set(OPENSSLDIR "/etc/ssl/")
