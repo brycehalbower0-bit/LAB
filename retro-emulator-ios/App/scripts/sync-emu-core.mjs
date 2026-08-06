@@ -193,7 +193,29 @@ function pruneNds(dir, rel) {
   }
 }
 pruneNds(melondsDest, "");
-console.log("synced Cores/NDS/melonds (manifest-pruned) -> nds/melonds");
+
+// version.h is CMake-generated upstream (same story as mGBA's
+// version.c); generate it from the pinned tag.
+const ndsVersionTemplate = readFileSync(
+  join(melondsSrc, "src", "version.h.in"),
+  "utf8",
+);
+const ndsVersionValues = {
+  melonDS_HOMEPAGE_URL: "https://melonds.kuribo64.net",
+  melonDS_VERSION: "1.1",
+  MELONDS_VERSION_SUFFIX: "-vendored",
+  MELONDS_GIT_BRANCH: "vendored",
+  MELONDS_GIT_HASH: "1.1",
+  MELONDS_BUILD_PROVIDER: "retro-emulator-ios",
+};
+writeFileSync(
+  join(melondsDest, "src", "version.h"),
+  ndsVersionTemplate.replace(
+    /\$\{([A-Za-z_]+)\}/g,
+    (_, key) => ndsVersionValues[key] ?? "",
+  ),
+);
+console.log("synced Cores/NDS/melonds (manifest-pruned, version.h) -> nds/melonds");
 
 // version.c is CMake-generated upstream; generate it here from the
 // pinned tag (Cores/GBA/README.md).
