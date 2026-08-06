@@ -203,8 +203,7 @@ void c3ds_run_frame(EmuCore *core) {
     // Safety cap: a wedged guest must not hang the caller (CI included).
     for (int i = 0; i < 100000 && !core->window->frame_done; i++) {
         const auto result = sys().RunLoop();
-        if (result != Core::System::ResultStatus::Success &&
-            result != Core::System::ResultStatus::Paused) {
+        if (result != Core::System::ResultStatus::Success) {
             break;
         }
     }
