@@ -365,7 +365,13 @@ void Context::MakeRequest() {
     }
 
     if (url_info.is_https) {
+// retro-emulator-ios patch: no SSL without web services (offline v1)
+#ifdef CPPHTTPLIB_OPENSSL_SUPPORT
         MakeRequestSSL(request, url_info, pending_headers);
+#else
+        LOG_WARNING(Service_HTTP, "HTTPS unavailable in this build");
+        state = RequestState::Completed;
+#endif
     } else {
         MakeRequestNonSSL(request, url_info, pending_headers);
     }
@@ -391,6 +397,8 @@ void Context::MakeRequestNonSSL(httplib::Request& request, const URLInfo& url_in
     }
 }
 
+// retro-emulator-ios patch: SSL client requires CPPHTTPLIB_OPENSSL_SUPPORT
+#ifdef CPPHTTPLIB_OPENSSL_SUPPORT
 void Context::MakeRequestSSL(httplib::Request& request, const URLInfo& url_info,
                              std::vector<Context::RequestHeader>& pending_headers) {
     httplib::Error error{-1};
@@ -448,6 +456,8 @@ void Context::MakeRequestSSL(httplib::Request& request, const URLInfo& url_info,
         state = RequestState::ReceivingBody;
     }
 }
+
+#endif // CPPHTTPLIB_OPENSSL_SUPPORT
 
 bool Context::ContentProvider(size_t offset, size_t length, httplib::DataSink& sink) {
     state = RequestState::SendingRequest;
