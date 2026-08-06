@@ -5,7 +5,8 @@
 
 add_library(c3ds_core STATIC c3ds_core.cpp)
 target_include_directories(c3ds_core
-    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../../Shared/include)
+    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../../Shared/include
+    PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries(c3ds_core PRIVATE citra_core citra_common video_core audio_core)
 set_target_properties(c3ds_core PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON)
 
