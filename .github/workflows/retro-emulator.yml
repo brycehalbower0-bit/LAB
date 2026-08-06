@@ -32,15 +32,17 @@ jobs:
       - name: Test
         run: ctest --test-dir build --output-on-failure
 
-      # Ground truth for the EmuCore podspec: exactly which mGBA sources
+      # Ground truth for the EmuCore podspec: exactly which core sources
       # compile and with which defines. Read from the run log when the
       # vendored module's file list or flags need updating.
-      - name: Dump mGBA compile manifest
+      - name: Dump core compile manifests
         run: |
-          echo "=== mgba compiled sources ==="
-          jq -r '.[].file' build/compile_commands.json | grep "Cores/GBA" | sed "s|.*/Cores/GBA/||" | sort
-          echo "=== mgba compile defines ==="
-          jq -r '.[] | select(.file | contains("Cores/GBA")) | .command' build/compile_commands.json | grep -oE '\-D[A-Za-z0-9_=]+' | sort -u
+          for CORE in GBA NDS; do
+            echo "=== Cores/$CORE compiled sources ==="
+            jq -r '.[].file' build/compile_commands.json | grep "Cores/$CORE" | sed "s|.*/Cores/$CORE/||" | sort
+            echo "=== Cores/$CORE compile defines ==="
+            jq -r --arg core "Cores/$CORE" '.[] | select(.file | contains($core)) | .command' build/compile_commands.json | grep -oE '\-D[A-Za-z0-9_=]+' | sort -u
+          done
 
   app-shell:
     name: Expo shell · typecheck · vendored-spike drift
