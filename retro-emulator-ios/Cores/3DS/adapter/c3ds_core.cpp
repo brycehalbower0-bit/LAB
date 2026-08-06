@@ -17,6 +17,8 @@
 // into HID.
 
 #include <cstdio>
+#include <exception>
+#include <typeinfo>
 #include <cstring>
 #include <filesystem>
 #include <memory>
@@ -171,7 +173,15 @@ EmuStatus c3ds_load_rom_path(EmuCore *core, const char *path) {
     core->window = std::make_unique<HeadlessWindow>();
     Frontend::RegisterDefaultApplets(sys());
 
-    const auto result = sys().Load(*core->window, path);
+    Core::System::ResultStatus result;
+    try {
+        result = sys().Load(*core->window, path);
+    } catch (const std::exception& e) {
+        std::fprintf(stderr, "c3ds: Load threw %s: %s
+",
+                     typeid(e).name(), e.what());
+        return EMU_ERR_INTERNAL;
+    }
     if (result != Core::System::ResultStatus::Success) {
         return map_load_result(result);
     }
