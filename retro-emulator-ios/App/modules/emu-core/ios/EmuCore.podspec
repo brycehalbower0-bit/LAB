@@ -30,7 +30,9 @@ Pod::Spec.new do |s|
     'GCC_OPTIMIZATION_LEVEL' => '3',
     'SWIFT_COMPILATION_MODE' => 'wholemodule',
     'HEADER_SEARCH_PATHS' => '"$(PODS_TARGET_SRCROOT)/cpp/include"',
-    'OTHER_CFLAGS' => '$(inherited) -I"$(PODS_TARGET_SRCROOT)/cpp/gba/mgba/include" -I"$(PODS_TARGET_SRCROOT)/cpp/gba/mgba/src" -DBUILD_STATIC -DM_CORE_GBA -DM_CORE_GB -DNDEBUG -DUSE_PTHREADS -DHAVE_FREELOCALE -DHAVE_FUTIMENS -DHAVE_FUTIMES -DHAVE_LOCALE -DHAVE_LOCALTIME_R -DHAVE_NEWLOCALE -DHAVE_PTHREAD_CREATE -DHAVE_PTHREAD_SETNAME_NP -DHAVE_SETLOCALE -DHAVE_STRDUP -DHAVE_STRLCPY -DHAVE_STRNDUP -DHAVE_USELOCALE -DHAVE_VASPRINTF'
+    'OTHER_CFLAGS' => '$(inherited) -I"$(PODS_TARGET_SRCROOT)/cpp/gba/mgba/include" -I"$(PODS_TARGET_SRCROOT)/cpp/gba/mgba/src" -I"$(PODS_TARGET_SRCROOT)/cpp/nds/melonds/src" -I"$(PODS_TARGET_SRCROOT)/cpp/nds/melonds/src/teakra/include" -DBUILD_STATIC -DM_CORE_GBA -DM_CORE_GB -DNDEBUG -DUSE_PTHREADS -DHAVE_FREELOCALE -DHAVE_FUTIMENS -DHAVE_FUTIMES -DHAVE_LOCALE -DHAVE_LOCALTIME_R -DHAVE_NEWLOCALE -DHAVE_PTHREAD_CREATE -DHAVE_PTHREAD_SETNAME_NP -DHAVE_SETLOCALE -DHAVE_STRDUP -DHAVE_STRLCPY -DHAVE_STRNDUP -DHAVE_USELOCALE -DHAVE_VASPRINTF',
+    # C++ compiles (melonDS/adapter) need the same include/define flags.
+    'OTHER_CPLUSPLUSFLAGS' => '$(inherited) $(OTHER_CFLAGS)'
   }
 
   # mGBA HEADERS deliberately stay out of source_files: CocoaPods maps
@@ -44,7 +46,10 @@ Pod::Spec.new do |s|
     'cpp/include/core_api.h',
     'cpp/null_core.c',
     'cpp/gba/gba_core.c',
-    'cpp/gba/mgba/src/**/*.c'
+    'cpp/gba/mgba/src/**/*.c',
+    'cpp/nds/nds_core.cpp',
+    'cpp/nds/nds_platform.cpp',
+    'cpp/nds/melonds/src/**/*.{c,cpp}'
   ]
   # Swift sees only the pure-C ABI: the bridge header plus core_api.h
   # itself (already C-clean by design — see core_api.h's header comment).

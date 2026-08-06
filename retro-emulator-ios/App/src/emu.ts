@@ -33,6 +33,7 @@ interface EmuCoreModule {
   unload(): Promise<void>;
   setInput(mask: number): void;
   setFastForward(multiplier: number): void;
+  setTouch(x: number, y: number, down: boolean): void;
   saveState(path: string): Promise<void>;
   loadState(path: string): Promise<void>;
   flushSave(): Promise<void>;

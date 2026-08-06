@@ -52,6 +52,9 @@ final class EmuSession: NSObject {
   private let inputLock = NSLock()
   private var pendingButtons: UInt32 = 0
   private var controllerButtons: UInt32 = 0
+  private var touchDown = false
+  private var touchX: UInt16 = 0
+  private var touchY: UInt16 = 0
 
   // Frame pacing: guest time follows wall time so the 59.7275 Hz GBA
   // doesn't drift against the 60 Hz display link (the surplus otherwise
@@ -103,7 +106,12 @@ final class EmuSession: NSObject {
   func loadRom(romPath: String, savePath: String?) throws -> [String: Any] {
     let romData = try Data(contentsOf: URL(fileURLWithPath: romPath))
     let ext = (romPath as NSString).pathExtension.lowercased()
-    let api = ext == "gba" ? emu_gba_api() : emu_null_api()
+    let api: UnsafePointer<EmuCoreApi>?
+    switch ext {
+    case "gba": api = emu_gba_api()
+    case "nds": api = emu_nds_api()
+    default: api = emu_null_api()
+    }
     return try load(api: api, romData: romData, savePath: savePath)
   }
 
@@ -220,6 +228,15 @@ final class EmuSession: NSObject {
     inputLock.unlock()
   }
 
+  /// Guest-pixel coordinates on the touch screen; down=false releases.
+  func setTouch(x: Int, y: Int, down: Bool) {
+    inputLock.lock()
+    touchDown = down
+    touchX = UInt16(clamping: x)
+    touchY = UInt16(clamping: y)
+    inputLock.unlock()
+  }
+
   // MARK: - Emulation thread
 
   private func emuThreadMain() {
@@ -266,9 +283,12 @@ final class EmuSession: NSObject {
 
     inputLock.lock()
     let buttons = pendingButtons | controllerButtons
+    let tDown: Int32 = touchDown ? 1 : 0
+    let tX = touchX
+    let tY = touchY
     inputLock.unlock()
-    var input = EmuInputState(buttons: buttons, touch_down: 0, touch_x: 0,
-                              touch_y: 0, analog_x: 0, analog_y: 0)
+    var input = EmuInputState(buttons: buttons, touch_down: tDown, touch_x: tX,
+                              touch_y: tY, analog_x: 0, analog_y: 0)
     api.pointee.set_input(core, &input)
 
     for _ in 0..<todo {

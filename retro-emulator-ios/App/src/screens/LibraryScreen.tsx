@@ -36,7 +36,7 @@ export default function LibraryScreen({
     const entries = romsDir
       .list()
       .filter((e): e is File => e instanceof File)
-      .filter((f) => f.name.toLowerCase().endsWith(".gba"))
+      .filter((f) => /\.(gba|nds)$/i.test(f.name))
       .map((f) => ({ name: f.name, uri: f.uri }))
       .sort((a, b) => a.name.localeCompare(b.name));
     setRoms(entries);
@@ -60,7 +60,7 @@ export default function LibraryScreen({
           const zipped = unzipSync(new Uint8Array(await source.arrayBuffer()));
           for (const [entryName, bytes] of Object.entries(zipped)) {
             const clean = entryName.split("/").pop() ?? entryName;
-            if (!clean.toLowerCase().endsWith(".gba") || bytes.length === 0) continue;
+            if (!/\.(gba|nds)$/i.test(clean) || bytes.length === 0) continue;
             const dest = new File(romsDir, clean);
             if (dest.exists) dest.delete();
             dest.write(bytes);
@@ -77,7 +77,7 @@ export default function LibraryScreen({
       if (imported.length === 0) {
         Alert.alert(
           "Nothing imported",
-          "No .gba file found. Import a Game Boy Advance ROM (.gba), zipped or not.",
+          "No .gba or .nds file found. Import a ROM, zipped or not.",
         );
       }
     } catch (e) {

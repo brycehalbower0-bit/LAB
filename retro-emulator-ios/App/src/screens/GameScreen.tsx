@@ -14,7 +14,13 @@ import {
   type ViewStyle,
 } from "react-native";
 import { File } from "expo-file-system";
-import { Buttons, EmuCore, EmuSurfaceView, type Diagnostics } from "../emu";
+import {
+  Buttons,
+  EmuCore,
+  EmuSurfaceView,
+  type CoreDesc,
+  type Diagnostics,
+} from "../emu";
 import {
   autoStatePathFor,
   savePathFor,
@@ -41,7 +47,9 @@ export default function GameScreen({
   );
   const [error, setError] = useState<string | null>(null);
   const [diag, setDiag] = useState<Diagnostics | null>(null);
+  const [desc, setDesc] = useState<CoreDesc | null>(null);
   const mask = useRef(0);
+  const touchLayout = useRef({ w: 1, h: 1 });
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -54,9 +62,10 @@ export default function GameScreen({
     let cancelled = false;
     (async () => {
       try {
-        await EmuCore.loadRom(toPosixPath(rom.uri), savePathFor(rom.name));
+        const d = await EmuCore.loadRom(toPosixPath(rom.uri), savePathFor(rom.name));
         await EmuCore.start();
         if (cancelled) return;
+        setDesc(d);
         setStatus("running");
         // Auto-resume: offer the snapshot taken when the game was last
         // left. The in-game save (battery) is untouched either way.
@@ -135,9 +144,23 @@ export default function GameScreen({
     }
   }
 
+  const isDual = (desc?.screenCount ?? 1) === 2;
+
+  // NDS bottom screen: touches map to guest pixels via setTouch.
+  const touchEvent = (e: { nativeEvent: { locationX: number; locationY: number } }, down: boolean) => {
+    const { w, h } = touchLayout.current;
+    const gx = Math.round((e.nativeEvent.locationX / w) * 256);
+    const gy = Math.round((e.nativeEvent.locationY / h) * 192);
+    EmuCore.setTouch(
+      Math.max(0, Math.min(255, gx)),
+      Math.max(0, Math.min(191, gy)),
+      down,
+    );
+  };
+
   return (
     <View style={styles.container}>
-      <View style={styles.screenArea}>
+      <View style={isDual ? styles.screenAreaDualTop : styles.screenArea}>
         <EmuSurfaceView screenIndex={0} style={styles.surface} />
         {status === "loading" && <Text style={styles.overlayMsg}>Loading…</Text>}
         {status === "error" && (
@@ -149,6 +172,25 @@ export default function GameScreen({
           </Text>
         )}
       </View>
+      {isDual && (
+        <View
+          style={styles.screenAreaDual}
+          onLayout={(e) => {
+            touchLayout.current = {
+              w: e.nativeEvent.layout.width,
+              h: e.nativeEvent.layout.height,
+            };
+          }}
+          onStartShouldSetResponder={() => true}
+          onMoveShouldSetResponder={() => true}
+          onResponderGrant={(e) => touchEvent(e, true)}
+          onResponderMove={(e) => touchEvent(e, true)}
+          onResponderRelease={(e) => touchEvent(e, false)}
+          onResponderTerminate={(e) => touchEvent(e, false)}
+        >
+          <EmuSurfaceView screenIndex={1} style={styles.surface} />
+        </View>
+      )}
 
       {/* shoulder row */}
       <View style={styles.shoulderRow}>
@@ -176,9 +218,13 @@ export default function GameScreen({
           <View style={styles.dpadRow}>{pad("▼", Buttons.DOWN, styles.dpadKey)}</View>
         </View>
 
-        {/* A/B */}
+        {/* face buttons: A/B always; X/Y for dual-screen (NDS) */}
         <View style={styles.faceButtons}>
-          {pad("A", Buttons.A, styles.faceButton)}
+          {isDual && pad("X", Buttons.X, [styles.faceButton, styles.faceSmall])}
+          <View style={styles.faceRow}>
+            {isDual && pad("Y", Buttons.Y, [styles.faceButton, styles.faceSmall])}
+            {pad("A", Buttons.A, styles.faceButton)}
+          </View>
           {pad("B", Buttons.B, [styles.faceButton, styles.faceButtonB])}
         </View>
       </View>
@@ -215,6 +261,10 @@ export default function GameScreen({
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#000" },
   screenArea: { width: "100%", aspectRatio: 240 / 160, marginTop: 50 },
+  screenAreaDual: { width: "100%", aspectRatio: 256 / 192 },
+  screenAreaDualTop: { width: "100%", aspectRatio: 256 / 192, marginTop: 40 },
+  faceRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  faceSmall: { width: 48, height: 48, borderRadius: 24, backgroundColor: "#374151" },
   surface: { width: "100%", height: "100%" },
   overlayMsg: {
     position: "absolute",

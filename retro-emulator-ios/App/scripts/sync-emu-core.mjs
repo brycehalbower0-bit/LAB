@@ -25,6 +25,8 @@ const files = [
   ["Cores/Shared/include/core_api.h", "include/core_api.h"],
   ["Tests/CoreTests/null_core.c", "null_core.c"],
   ["Cores/GBA/gba_core.c", "gba/gba_core.c"],
+  ["Cores/NDS/nds_core.cpp", "nds/nds_core.cpp"],
+  ["Cores/NDS/nds_platform.cpp", "nds/nds_platform.cpp"],
 ];
 
 for (const [src, dest] of files) {
@@ -132,6 +134,62 @@ function pruneUncompiled(dir, rel) {
 }
 pruneUncompiled(mgbaDest, "");
 console.log(`synced Cores/GBA/mgba (manifest-pruned) -> gba/mgba`);
+
+// --- melonDS (NDS core) — same pattern: verbatim copy, then prune .c/
+// .cpp files not in CI's compile manifest so the podspec's glob
+// compiles exactly what CI proved. Headers are always kept.
+const melondsSrc = join(repoRoot, "Cores", "NDS", "melonds");
+const melondsDest = join(destRoot, "nds", "melonds");
+rmSync(melondsDest, { recursive: true, force: true });
+cpSync(join(melondsSrc, "src"), join(melondsDest, "src"), { recursive: true });
+cpSync(join(melondsSrc, "LICENSE"), join(melondsDest, "LICENSE"));
+
+const ndsCompiled = new Set([
+  "src/ARCodeFile.cpp", "src/ARDatabaseDAT.cpp", "src/AREngine.cpp",
+  "src/ARM.cpp", "src/ARMInterpreter.cpp", "src/ARMInterpreter_ALU.cpp",
+  "src/ARMInterpreter_Branch.cpp", "src/ARMInterpreter_LoadStore.cpp",
+  "src/CP15.cpp", "src/CRC32.cpp", "src/DMA.cpp", "src/DMA_Timings.cpp",
+  "src/DSP_HLE/AACUcode.cpp", "src/DSP_HLE/G711Ucode.cpp",
+  "src/DSP_HLE/GraphicsUcode.cpp", "src/DSP_HLE/UcodeBase.cpp",
+  "src/DSi.cpp", "src/DSi_AES.cpp", "src/DSi_Camera.cpp",
+  "src/DSi_DSP.cpp", "src/DSi_I2C.cpp", "src/DSi_I2S.cpp",
+  "src/DSi_NAND.cpp", "src/DSi_NDMA.cpp", "src/DSi_NWifi.cpp",
+  "src/DSi_SD.cpp", "src/DSi_SPI_TSC.cpp", "src/FATIO.cpp",
+  "src/FATStorage.cpp", "src/FreeBIOS.cpp", "src/GBACart.cpp",
+  "src/GBACartMotionPak.cpp", "src/GPU.cpp", "src/GPU2D.cpp",
+  "src/GPU2D_Soft.cpp", "src/GPU3D.cpp", "src/GPU3D_Soft.cpp",
+  "src/GPU3D_Texcache.cpp", "src/Mic.cpp", "src/NDS.cpp",
+  "src/NDSCart.cpp", "src/NDSCartR4.cpp", "src/ROMList.cpp",
+  "src/RTC.cpp", "src/SPI.cpp", "src/SPI_Firmware.cpp", "src/SPU.cpp",
+  "src/Savestate.cpp", "src/Utils.cpp", "src/Wifi.cpp", "src/WifiAP.cpp",
+  "src/blip-buf/blip_buf.c", "src/fatfs/ff.c", "src/fatfs/ffsystem.c",
+  "src/fatfs/ffunicode.c", "src/sha1/sha1.c",
+  "src/teakra/src/ahbm.cpp", "src/teakra/src/apbp.cpp",
+  "src/teakra/src/btdmp.cpp", "src/teakra/src/disassembler.cpp",
+  "src/teakra/src/disassembler_c.cpp", "src/teakra/src/dma.cpp",
+  "src/teakra/src/memory_interface.cpp", "src/teakra/src/mmio.cpp",
+  "src/teakra/src/parser.cpp", "src/teakra/src/processor.cpp",
+  "src/teakra/src/teakra.cpp", "src/teakra/src/teakra_c.cpp",
+  "src/teakra/src/timer.cpp", "src/tiny-AES-c/aes.c",
+  "src/xxhash/xxhash.c",
+]);
+
+function pruneNds(dir, rel) {
+  for (const entry of readdirSync(dir)) {
+    const abs = join(dir, entry);
+    const relPath = rel ? `${rel}/${entry}` : entry;
+    if (statSync(abs).isDirectory()) {
+      pruneNds(abs, relPath);
+    } else if (
+      (entry.endsWith(".c") || entry.endsWith(".cpp")) &&
+      !ndsCompiled.has(relPath)
+    ) {
+      unlinkSync(abs);
+    }
+  }
+}
+pruneNds(melondsDest, "");
+console.log("synced Cores/NDS/melonds (manifest-pruned) -> nds/melonds");
 
 // version.c is CMake-generated upstream; generate it here from the
 // pinned tag (Cores/GBA/README.md).

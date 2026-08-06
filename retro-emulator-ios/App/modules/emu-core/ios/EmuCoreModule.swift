@@ -43,6 +43,12 @@ public class EmuCoreModule: Module {
       EmuSession.shared.fastForward = max(1.0, min(8.0, multiplier))
     }
 
+    // Touch-screen input in guest pixels (NDS bottom screen). Sync for
+    // the same reason as setInput: event-rate, one lock-protected store.
+    Function("setTouch") { (x: Int, y: Int, down: Bool) in
+      EmuSession.shared.setTouch(x: x, y: y, down: down)
+    }
+
     AsyncFunction("saveState") { (path: String) in
       try EmuSession.shared.saveState(path: path)
     }

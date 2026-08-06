@@ -22,6 +22,9 @@ const EmuCoreApi *emu_null_api(void);
 /* GBA core (Cores/GBA/gba_core.c over vendored mGBA, MPL-2.0). */
 const EmuCoreApi *emu_gba_api(void);
 
+/* NDS core (Cores/NDS/nds_core.cpp over vendored melonDS, GPLv3). */
+const EmuCoreApi *emu_nds_api(void);
+
 #ifdef __cplusplus
 }
 #endif
