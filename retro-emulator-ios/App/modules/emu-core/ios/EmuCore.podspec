@@ -32,7 +32,10 @@ Pod::Spec.new do |s|
     'HEADER_SEARCH_PATHS' => '"$(PODS_TARGET_SRCROOT)/cpp/include"',
     'OTHER_CFLAGS' => '$(inherited) -I"$(PODS_TARGET_SRCROOT)/cpp/gba/mgba/include" -I"$(PODS_TARGET_SRCROOT)/cpp/gba/mgba/src" -I"$(PODS_TARGET_SRCROOT)/cpp/nds/melonds/src" -I"$(PODS_TARGET_SRCROOT)/cpp/nds/melonds/src/teakra/include" -DBUILD_STATIC -DM_CORE_GBA -DM_CORE_GB -DNDEBUG -DUSE_PTHREADS -DHAVE_FREELOCALE -DHAVE_FUTIMENS -DHAVE_FUTIMES -DHAVE_LOCALE -DHAVE_LOCALTIME_R -DHAVE_NEWLOCALE -DHAVE_PTHREAD_CREATE -DHAVE_PTHREAD_SETNAME_NP -DHAVE_SETLOCALE -DHAVE_STRDUP -DHAVE_STRLCPY -DHAVE_STRNDUP -DHAVE_USELOCALE -DHAVE_VASPRINTF',
     # C++ compiles (melonDS/adapter) need the same include/define flags.
-    'OTHER_CPLUSPLUSFLAGS' => '$(inherited) $(OTHER_CFLAGS)'
+    # The trailing -std wins over the project-wide c++20 Expo forces:
+    # melonDS targets C++17 (path::u8string() returns char8_t strings
+    # under c++20, breaking FATStorage).
+    'OTHER_CPLUSPLUSFLAGS' => '$(inherited) $(OTHER_CFLAGS) -std=gnu++17'
   }
 
   # mGBA HEADERS deliberately stay out of source_files: CocoaPods maps
