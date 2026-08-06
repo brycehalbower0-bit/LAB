@@ -144,7 +144,20 @@ int main() {
         uint8_t r = (uint8_t)(px & 0xFF);
         uint8_t g = (uint8_t)((px >> 8) & 0xFF);
         uint8_t b = (uint8_t)((px >> 16) & 0xFF);
-        std::printf("top(0,0) = %08X (r=%u g=%u b=%u)\n", px, r, g, b);
+        std::printf("top(0,0) = %08X (r=%u g=%u b=%u), bottom(0,0) = %08X\n",
+                    px, r, g, b, bottom.pixels[0]);
+        // Diagnostic: where did the red pixel land, if anywhere?
+        for (int s = 0; s < 2; s++) {
+            const EmuVideoBuffer &v = s == 0 ? top : bottom;
+            for (uint32_t i = 0; i < v.width * v.height; i++) {
+                uint32_t p = v.pixels[i] & 0x00FFFFFF;
+                if (p != (top.pixels[0] & 0x00FFFFFF) && p != 0) {
+                    std::printf("screen %d first differing pixel at %u: %08X\n",
+                                s, i, v.pixels[i]);
+                    break;
+                }
+            }
+        }
         CHECK(r > 200, "red high — boot reached ARM9 code, RGBA order");
         CHECK(g < 50 && b < 50, "green/blue low — no swizzle");
     }
