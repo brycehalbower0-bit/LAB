@@ -24,6 +24,7 @@
 #include <vector>
 
 #include "audio_core/sink_details.h"
+#include "common/file_util.h"
 #include "common/settings.h"
 #include "core/core.h"
 #include "core/frontend/applets/default_applets.h"
@@ -154,6 +155,18 @@ EmuStatus c3ds_load_rom_path(EmuCore *core, const char *path) {
     Settings::values.use_cpu_jit = false;
     Settings::values.graphics_api = Settings::GraphicsAPI::Software;
     Settings::values.output_type = AudioCore::SinkType::Null;
+
+    // Citra's user-path table is empty until a frontend sets it; any
+    // .at() on it throws (upstream frontends all call this at init).
+    // The shell passes a writable sandbox dir in the device slice; for
+    // headless runs a temp dir keeps state out of the source tree.
+    {
+        const auto user_dir =
+            std::filesystem::temp_directory_path() / "emulab-3ds";
+        std::error_code ec;
+        std::filesystem::create_directories(user_dir, ec);
+        FileUtil::SetUserPath(user_dir.string());
+    }
 
     core->window = std::make_unique<HeadlessWindow>();
     Frontend::RegisterDefaultApplets(sys());
