@@ -19,11 +19,14 @@
 #include <memory>
 #include <string>
 
-#include "NDS.h"
-#include "NDSCart.h"
-#include "Savestate.h"
-#include "SPU.h"
-#include "GPU.h"
+// Path-qualified: bare names can collide with iOS framework headers in
+// the pod build (ExpoModulesCore ships its own Platform.h, and short
+// names like GPU.h are risky next to Apple SDKs).
+#include "melonds/src/NDS.h"
+#include "melonds/src/NDSCart.h"
+#include "melonds/src/Savestate.h"
+#include "melonds/src/SPU.h"
+#include "melonds/src/GPU.h"
 
 #include "core_api.h"
 

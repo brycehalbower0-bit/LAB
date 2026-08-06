@@ -21,7 +21,9 @@
 #include <string>
 #include <thread>
 
-#include "Platform.h"
+// Path-qualified: a bare "Platform.h" collides with ExpoModulesCore's
+// framework header of the same name in the iOS pod build.
+#include "melonds/src/Platform.h"
 
 // Provided by nds_core.cpp.
 void emu_nds_mark_save_dirty(void* userdata);
