@@ -34,3 +34,7 @@ set(CITRA_USE_PRECOMPILED_HEADERS OFF CACHE BOOL "" FORCE)
 set(CITRA_WARNINGS_AS_ERRORS OFF CACHE BOOL "" FORCE)
 set(ENABLE_LTO OFF CACHE BOOL "" FORCE)
 set(ENABLE_SHADER_JIT OFF CACHE BOOL "" FORCE)
+# Frame pointers + debug info: bring-up needs readable backtraces from
+# the gdb throw-catchpoint in CI (costs nothing at this stage).
+set(CMAKE_CXX_FLAGS_RELEASE "-O2 -g -fno-omit-frame-pointer" CACHE STRING "" FORCE)
+set(CMAKE_C_FLAGS_RELEASE "-O2 -g -fno-omit-frame-pointer" CACHE STRING "" FORCE)
