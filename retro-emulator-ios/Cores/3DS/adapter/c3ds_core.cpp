@@ -177,9 +177,8 @@ EmuStatus c3ds_load_rom_path(EmuCore *core, const char *path) {
     try {
         result = sys().Load(*core->window, path);
     } catch (const std::exception& e) {
-        std::fprintf(stderr, "c3ds: Load threw %s: %s
-",
-                     typeid(e).name(), e.what());
+        std::fprintf(stderr, "c3ds: Load threw %s: %s\n", typeid(e).name(),
+                     e.what());
         return EMU_ERR_INTERNAL;
     }
     if (result != Core::System::ResultStatus::Success) {
