@@ -44,6 +44,22 @@ jobs:
             jq -r --arg core "Cores/$CORE" '.[] | select(.file | contains($core)) | .command' build/compile_commands.json | grep -oE '\-D[A-Za-z0-9_=]+' | sort -u
           done
 
+  core-3ds-experimental:
+    name: 3DS core · headless no-JIT (experimental, non-gating)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    defaults:
+      run:
+        working-directory: retro-emulator-ios
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure (dyncom, no JIT, no GL, no keyblob)
+        run: cmake -S Cores/3DS -B build3ds -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build citra_core
+        run: cmake --build build3ds --target citra_core -j $(nproc)
+
   app-shell:
     name: Expo shell · typecheck · vendored-spike drift
     runs-on: ubuntu-latest

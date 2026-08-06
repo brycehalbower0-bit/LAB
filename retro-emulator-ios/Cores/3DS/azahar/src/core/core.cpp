@@ -16,7 +16,8 @@
 #include "core/hle/service/cam/cam.h"
 #include "core/hle/service/hid/hid.h"
 #include "core/hle/service/ir/ir_user.h"
-#if CITRA_ARCH(x86_64) || CITRA_ARCH(arm64)
+// retro-emulator-ios patch: dynarmic excluded from no-JIT builds (ADR 0001-D3)
+#if (CITRA_ARCH(x86_64) || CITRA_ARCH(arm64)) && defined(CITRA_ENABLE_DYNARMIC)
 #include "core/arm/dynarmic/arm_dynarmic.h"
 #endif
 #include "core/arm/dyncom/arm_dyncom.h"
@@ -523,7 +524,8 @@ System::ResultStatus System::Init(Frontend::EmuWindow& emu_window,
     exclusive_monitor = MakeExclusiveMonitor(*memory, num_cores);
     cpu_cores.reserve(num_cores);
     if (Settings::values.use_cpu_jit) {
-#if CITRA_ARCH(x86_64) || CITRA_ARCH(arm64)
+// retro-emulator-ios patch: dynarmic excluded from no-JIT builds (ADR 0001-D3)
+#if (CITRA_ARCH(x86_64) || CITRA_ARCH(arm64)) && defined(CITRA_ENABLE_DYNARMIC)
         for (u32 i = 0; i < num_cores; ++i) {
             cpu_cores.push_back(std::make_shared<ARM_Dynarmic>(
                 *this, *memory, i, timing->GetTimer(i), *exclusive_monitor));

@@ -529,7 +529,8 @@ if (ENABLE_SCRIPTING)
     )
 endif()
 
-if ("x86_64" IN_LIST ARCHITECTURE OR "arm64" IN_LIST ARCHITECTURE)
+# retro-emulator-ios patch: dynarmic optional (ADR 0001-D3 no-JIT builds)
+if (ENABLE_DYNARMIC AND ("x86_64" IN_LIST ARCHITECTURE OR "arm64" IN_LIST ARCHITECTURE))
     target_sources(citra_core PRIVATE
         arm/dynarmic/arm_dynarmic.cpp
         arm/dynarmic/arm_dynarmic.h
@@ -541,6 +542,7 @@ if ("x86_64" IN_LIST ARCHITECTURE OR "arm64" IN_LIST ARCHITECTURE)
         arm/dynarmic/arm_tick_counts.h
     )
     target_link_libraries(citra_core PRIVATE dynarmic)
+    target_compile_definitions(citra_core PRIVATE CITRA_ENABLE_DYNARMIC)
 endif()
 
 if (CITRA_USE_PRECOMPILED_HEADERS)

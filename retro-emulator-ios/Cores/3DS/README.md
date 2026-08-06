@@ -9,10 +9,23 @@ decision record superseding §6.3's provisional Panda3DS preference
 
 `azahar/` is a snapshot of **Azahar 2125.1.3** (tag `2125.1.3`,
 https://github.com/azahar-emu/azahar, GPL-2.0), vendored as a plain
-copy. **Status: base tree only — `externals/` submodule contents are
-not yet fetched** (boost, cryptopp, fmt, teakra, nihstro, xxHash, zstd,
-soundtouch, faad2 and friends are empty stubs pending the build-graph
-pass below).
+copy. 18 `externals/` submodule trees are fetched at the tag's exact
+gitlink pins and pruned of tests/docs; deliberately excluded:
+dynarmic/oaknut/xbyak (JIT — D3), Qt/SDL/discord/openal/cubeb, web
+stack, GL/Vulkan stacks (Phase 3d), catch2, libadrenotools.
+
+### Local patches (visible, greppable: "retro-emulator-ios patch")
+
+1. `ENABLE_DYNARMIC` CMake option (root CMakeLists, externals/
+   CMakeLists, src/core/CMakeLists, src/core/core.cpp,
+   src/core/arm/exclusive_monitor.cpp): dynarmic fully excluded from
+   no-JIT builds — sources uncompiled, submodule unreferenced,
+   instantiation sites behind `CITRA_ENABLE_DYNARMIC`. Runtime falls
+   back to dyncom exactly as upstream's own non-x86/arm64 branch does.
+
+`Cores/3DS/CMakeLists.txt` is a standalone headless configure of the
+snapshot (dyncom, software renderer, no keyblob) driven by the
+**non-gating** `core-3ds-experimental` CI job while bring-up iterates.
 
 ## Integration route (decided during vendoring, refines ADR 0005)
 

@@ -100,7 +100,8 @@ endif()
 
 
 # Xbyak
-if ("x86_64" IN_LIST ARCHITECTURE)
+# retro-emulator-ios patch: only needed by dynarmic (ADR 0001-D3)
+if (ENABLE_DYNARMIC AND ("x86_64" IN_LIST ARCHITECTURE))
     if(USE_SYSTEM_XBYAK)
         find_package(xbyak REQUIRED)
         add_library(xbyak INTERFACE)
@@ -111,7 +112,8 @@ if ("x86_64" IN_LIST ARCHITECTURE)
 endif()
 
 # Oaknut
-if ("arm64" IN_LIST ARCHITECTURE)
+# retro-emulator-ios patch: only needed by dynarmic (ADR 0001-D3)
+if (ENABLE_DYNARMIC AND ("arm64" IN_LIST ARCHITECTURE))
     if(USE_SYSTEM_OAKNUT)
         find_package(oaknut REQUIRED)
         add_library(oaknut INTERFACE)
@@ -122,7 +124,8 @@ if ("arm64" IN_LIST ARCHITECTURE)
 endif()
 
 # Dynarmic
-if ("x86_64" IN_LIST ARCHITECTURE OR "arm64" IN_LIST ARCHITECTURE)
+# retro-emulator-ios patch: dynarmic optional (ADR 0001-D3 no-JIT builds)
+if (ENABLE_DYNARMIC AND ("x86_64" IN_LIST ARCHITECTURE OR "arm64" IN_LIST ARCHITECTURE))
     if(USE_SYSTEM_DYNARMIC)
         find_package(dynarmic REQUIRED)
         add_library(dynarmic INTERFACE)
