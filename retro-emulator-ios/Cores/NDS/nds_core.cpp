@@ -197,6 +197,8 @@ void nds_set_input(EmuCore *core, const EmuInputState *input) {
     }
 }
 
+// BufferLength() is capacity; Length() is bytes used, valid after
+// Finish() writes the length header.
 size_t nds_state_size(const EmuCore *core) {
     if (!core->nds) {
         return 0;
@@ -206,7 +208,8 @@ size_t nds_state_size(const EmuCore *core) {
         state.Error) {
         return 0;
     }
-    return state.BufferLength();
+    state.Finish();
+    return state.Length();
 }
 
 EmuStatus nds_state_save(const EmuCore *core, uint8_t *out, size_t size) {
@@ -218,10 +221,11 @@ EmuStatus nds_state_save(const EmuCore *core, uint8_t *out, size_t size) {
         state.Error) {
         return EMU_ERR_INTERNAL;
     }
-    if (size < state.BufferLength()) {
+    state.Finish();
+    if (size < state.Length()) {
         return EMU_ERR_INVALID_ARG;
     }
-    std::memcpy(out, state.Buffer(), state.BufferLength());
+    std::memcpy(out, state.Buffer(), state.Length());
     return EMU_OK;
 }
 

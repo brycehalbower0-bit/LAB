@@ -58,25 +58,34 @@ std::vector<uint8_t> make_test_rom() {
     put32(rom, 0x84, 0x200);     // header size
 
     // ARM9 program:
+    //   POWCNT1    = 0x8003      (both LCDs + 2D engine A, A on top)
     //   DISPCNT(A) = 0x00020000  (display mode 2: framebuffer, VRAM A)
     //   VRAMCNT_A  = 0x80        (VRAM A -> LCDC)
     //   VRAM[0]    = 0x801F801F  (two red pixels, ABGR1555)
     //   spin
     const uint32_t arm9_prog[] = {
         0xE3A00404, // mov r0, #0x04000000
+        0xE3A05C80, // mov r5, #0x8000
+        0xE3855003, // orr r5, r5, #3
+        0xE5805304, // str r5, [r0, #0x304]  (POWCNT1)
         0xE3A01602, // mov r1, #0x00200000
-        0xE5801000, // str r1, [r0]        (DISPCNT A = mode 2)
+        0xE5801000, // str r1, [r0]          (DISPCNT A = mode 2)
         0xE3A02080, // mov r2, #0x80
         0xE5C02240, // strb r2, [r0, #0x240] (VRAMCNT_A = enable, LCDC)
         0xE3A03406, // mov r3, #0x06000000
-        0xE59F4008, // ldr r4, [pc, #8]    (literal below)
+        0xE59F4008, // ldr r4, [pc, #8]      (literal below)
         0xE5834000, // str r4, [r3]
         0xEAFFFFFE, // b .
         0x801F801F, // literal: two ABGR1555 red pixels, alpha set
     };
     std::memcpy(rom.data() + arm9_off, arm9_prog, sizeof(arm9_prog));
 
+    // ARM7 program: SOUNDCNT master enable (the SPU only pushes output
+    // samples when bit 15 is set), then spin.
     const uint32_t arm7_prog[] = {
+        0xE3A00404, // mov r0, #0x04000000
+        0xE3A01C80, // mov r1, #0x8000
+        0xE5801500, // str r1, [r0, #0x500]  (SOUNDCNT)
         0xEAFFFFFE, // b .
     };
     std::memcpy(rom.data() + arm7_off, arm7_prog, sizeof(arm7_prog));
