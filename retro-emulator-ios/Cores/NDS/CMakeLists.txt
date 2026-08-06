@@ -12,6 +12,9 @@ set(BUILD_QT_SDL OFF CACHE BOOL "" FORCE)
 add_subdirectory(melonds EXCLUDE_FROM_ALL)
 
 add_library(nds_core STATIC nds_core.cpp nds_platform.cpp)
+# Headless builds surface melonDS's own logs (boot diagnostics in CI);
+# the iOS podspec never defines this, so the device build stays quiet.
+target_compile_definitions(nds_core PRIVATE EMU_NDS_VERBOSE_LOG)
 target_include_directories(nds_core
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../Shared/include
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/melonds/src)
