@@ -346,6 +346,7 @@ bool AAC_DecodeFrame(AACDecoder*, const void*, int, void*, int) { return false; 
 bool Addon_KeyDown(KeyType, void*) { return false; }
 void Addon_RumbleStart(u32, void*) {}
 void Addon_RumbleStop(void*) {}
+float Addon_MotionQuery(MotionQueryType, void*) { return 0.0f; }
 
 // --- dynamic libraries (never used on iOS) ---
 
