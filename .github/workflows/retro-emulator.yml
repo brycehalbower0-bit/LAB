@@ -69,18 +69,22 @@ jobs:
       # Run under gdb with a throw catchpoint: Citra's exceptions are
       # bare unordered_map::at failures whose what() names nothing, so a
       # backtrace is the only thing that localizes them.
+      # Run plainly; only on failure re-run under gdb for a backtrace
+      # (gdb -batch exits non-zero when `bt` finds no stack, so it can't
+      # be the primary runner).
       - name: Run 3DS contract test
         run: |
           BIN=./build3ds/bin/Release/c3ds_core_tests
+          if "$BIN"; then
+            exit 0
+          fi
+          echo "--- test failed; retrying under gdb for a backtrace ---"
           sudo apt-get update -qq >/dev/null 2>&1 || true
           sudo apt-get install -y --no-install-recommends gdb >/dev/null 2>&1 || true
           if command -v gdb >/dev/null; then
-            gdb -batch -ex "catch throw" -ex run -ex bt \
-              -ex "info args" --args "$BIN"
-          else
-            echo "gdb unavailable; running without a backtrace"
-            "$BIN"
+            gdb -batch -ex "catch throw" -ex run -ex bt --args "$BIN" || true
           fi
+          exit 1
 
       - name: Verify zero key material in binaries
         run: |
