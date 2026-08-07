@@ -33,6 +33,7 @@
 #include "core/core.h"
 #include "core/frontend/applets/default_applets.h"
 #include "core/frontend/emu_window.h"
+#include "core/hle/service/service.h"
 #include "video_core/gpu.h"
 #include "video_core/renderer_software/renderer_software.h"
 
@@ -180,6 +181,15 @@ EmuStatus c3ds_load_rom_path(EmuCore *core, const char *path) {
         Common::Log::Start();
         Common::Log::SetGlobalFilter(Common::Log::Filter(Common::Log::Level::Debug));
         logging_ready = true;
+    }
+
+    // Every service module must have an LLE entry: Service::AttemptLLE
+    // does lle_modules.at(name) unconditionally and throws on an empty
+    // map. All false = HLE everywhere, which is what we want (LLE needs
+    // dumped system titles, i.e. exactly the content we don't accept).
+    // Mirrors upstream's libretro frontend.
+    for (const auto& service_module : Service::service_module_map) {
+        Settings::values.lle_modules.emplace(service_module.name, false);
     }
 
     core->window = std::make_unique<HeadlessWindow>();
