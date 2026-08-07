@@ -49,6 +49,32 @@ Upstream ships an **official libretro core built for iOS arm64**
    stripped per §2.1 (acceptance criterion: zero key handling compiled
    in; encrypted content answers `EMU_ERR_ENCRYPTED_CONTENT`).
 
+## iOS build route (Phase 3b) — scoped, not yet built
+
+Numbers that decide the approach: **1369 compiled sources** (521 core +
+848 externals) versus 188 for GBA+NDS combined, plus CMake-generated
+files (`scm_rev.cpp` from `scm_rev.cpp.in`, `version.h`) and per-target
+define sets that differ between `citra_common`, `citra_core`, and
+`video_core`.
+
+The podspec-glob pattern that carried mGBA and melonDS does not scale
+here: a single glob can't express per-target defines, and generating
+`scm_rev.cpp` by hand duplicates upstream's git-derived logic. Route to
+take instead:
+
+**`prepare_command` in the podspec runs CMake** (the same
+`no-jit-headless.cmake` cache file CI uses, plus the iOS toolchain flags
+upstream's `libretro.yml` proves work: `-DIOS=ON
+-DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_ARCHITECTURES=arm64
+-DCITRA_USE_PRECOMPILED_HEADERS=OFF -DENABLE_OPT=OFF`), producing static
+libs the pod then links via `vendored_libraries`. Keeps one build
+definition for CI and device, and keeps the CI compile-manifest job
+meaningful.
+
+Open question for that slice: EAS build-machine time. 1369 sources at
+`-O2` is minutes of compile on every build, and the pod's
+`prepare_command` runs before the Xcode build proper.
+
 ## Next steps (Phase 3a, in order)
 
 1. Fetch the needed `externals/` submodule trees at the tag's pinned
