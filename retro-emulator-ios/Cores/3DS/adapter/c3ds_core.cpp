@@ -27,6 +27,8 @@
 
 #include "audio_core/sink_details.h"
 #include "common/file_util.h"
+#include "common/logging/backend.h"
+#include "common/logging/filter.h"
 #include "common/settings.h"
 #include "core/core.h"
 #include "core/frontend/applets/default_applets.h"
@@ -168,6 +170,16 @@ EmuStatus c3ds_load_rom_path(EmuCore *core, const char *path) {
         std::error_code ec;
         std::filesystem::create_directories(user_dir, ec);
         FileUtil::SetUserPath(user_dir.string());
+    }
+
+    // Citra's own logs are the cheapest map of how far Load gets when
+    // something throws.
+    static bool logging_ready = false;
+    if (!logging_ready) {
+        Common::Log::Initialize();
+        Common::Log::Start();
+        Common::Log::SetGlobalFilter(Common::Log::Filter(Common::Log::Level::Debug));
+        logging_ready = true;
     }
 
     core->window = std::make_unique<HeadlessWindow>();

@@ -72,6 +72,8 @@ jobs:
       - name: Run 3DS contract test
         run: |
           BIN=./build3ds/bin/Release/c3ds_core_tests
+          sudo apt-get update -qq >/dev/null 2>&1 || true
+          sudo apt-get install -y --no-install-recommends gdb >/dev/null 2>&1 || true
           if command -v gdb >/dev/null; then
             gdb -batch -ex "catch throw" -ex run -ex bt \
               -ex "info args" --args "$BIN"
