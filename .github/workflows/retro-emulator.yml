@@ -71,9 +71,14 @@ jobs:
       # backtrace is the only thing that localizes them.
       - name: Run 3DS contract test
         run: |
-          sudo apt-get install -y gdb >/dev/null
-          gdb -batch -ex "catch throw" -ex run -ex bt -ex "info locals" \
-            --args ./build3ds/bin/Release/c3ds_core_tests
+          BIN=./build3ds/bin/Release/c3ds_core_tests
+          if command -v gdb >/dev/null; then
+            gdb -batch -ex "catch throw" -ex run -ex bt \
+              -ex "info args" --args "$BIN"
+          else
+            echo "gdb unavailable; running without a backtrace"
+            "$BIN"
+          fi
 
       - name: Verify zero key material in binaries
         run: |
