@@ -197,8 +197,11 @@ export default function GameScreen({
       {/* shoulder row */}
       <View style={styles.shoulderRow}>
         {pad("L", Buttons.L, styles.shoulder)}
-        <Pressable style={styles.menuButton} onPress={onExit}>
-          <Text style={styles.menuText}>Exit</Text>
+        <Pressable
+          style={[styles.menuButton, styles.menuExit]}
+          onPress={onExit}
+        >
+          <Text style={[styles.menuText, styles.menuExitText]}>Exit</Text>
         </Pressable>
         <Pressable style={styles.menuButton} onPress={cycleFastForward}>
           <Text style={[styles.menuText, ffIndex > 0 && styles.ffActive]}>
@@ -245,7 +248,7 @@ export default function GameScreen({
       </View>
 
       {/* save states */}
-      <View style={styles.stateRow}>
+      <View style={[styles.stateRow, overlay && styles.stateRowOverlay]}>
         {[0, 1, 2].map((slot) => (
           <View key={slot} style={styles.stateSlot}>
             <Pressable
@@ -367,14 +370,19 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: "center",
   },
+  // Anchored to the bottom and sized to its content -- deliberately not
+  // a full-height fill. The children use flex tricks that assume they
+  // own the screen (stateRow has marginTop:"auto"), so in a full-height
+  // layer they spread out and push the shoulder row under the status bar.
   controlLayer: {
     position: "absolute",
-    top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    justifyContent: "flex-end",
+    paddingBottom: 8,
   },
+  // Neutralise the stacked layout's "push me to the bottom" margin.
+  stateRowOverlay: { marginTop: 14 },
   screenArea: { width: "100%", aspectRatio: 240 / 160, marginTop: 50 },
   screenAreaDual: { width: "100%", aspectRatio: 256 / 192 },
   screenAreaDualTop: { width: "100%", aspectRatio: 256 / 192, marginTop: 40 },
@@ -430,8 +438,20 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   shoulder: { width: 90, height: 36, borderRadius: 8 },
-  menuButton: { padding: 8 },
-  menuText: { color: "#818cf8", fontSize: 15 },
+  // Real buttons, not bare text: over a game these need a visible edge
+  // and a target big enough to hit without looking away from the screen.
+  menuButton: {
+    minWidth: 52,
+    height: 36,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: "#1f2937",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  menuExit: { backgroundColor: "#7f1d1d" },
+  menuText: { color: "#c7d2fe", fontSize: 14, fontWeight: "600" },
+  menuExitText: { color: "#fecaca" },
   ffActive: { color: "#34d399", fontWeight: "700" },
   mainControls: {
     flexDirection: "row",
