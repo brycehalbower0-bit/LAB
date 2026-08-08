@@ -58,6 +58,11 @@ export default function GameScreen({
   // they cover; deliberately per-session rather than persisted, since
   // the touch screen is only in the way for particular moments.
   const [controlsHidden, setControlsHidden] = useState(false);
+  // 3DS savestates abort the process: Boost.Serialization throws on an
+  // unregistered polymorphic class and the exception escapes the core's
+  // C ABI. A ref, because the unmount cleanup captures its initial
+  // closure and would otherwise auto-save with a stale value.
+  const statesWork = useRef(true);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -105,10 +110,11 @@ export default function GameScreen({
         if (cancelled) return;
         setDesc(d);
         setStatus("running");
+        statesWork.current = !(d.screenCount === 2 && d.width > 256);
         // Auto-resume: offer the snapshot taken when the game was last
         // left. The in-game save (battery) is untouched either way.
         const autoPath = autoStatePathFor(rom.name);
-        if (new File(`file://${autoPath}`).exists) {
+        if (statesWork.current && new File(`file://${autoPath}`).exists) {
           Alert.alert("Continue?", "Pick up where you left off last time?", [
             { text: "Start fresh", style: "cancel" },
             {
@@ -131,7 +137,9 @@ export default function GameScreen({
       EmuCore.setFastForward(1);
       (async () => {
         try {
-          await EmuCore.saveState(autoStatePathFor(rom.name));
+          if (statesWork.current) {
+            await EmuCore.saveState(autoStatePathFor(rom.name));
+          }
         } catch {}
         try {
           await EmuCore.flushSave();
@@ -170,6 +178,15 @@ export default function GameScreen({
   );
 
   async function stateAction(slot: number, save: boolean) {
+    if (!statesWork.current) {
+      Alert.alert(
+        "Save states unavailable",
+        "The 3DS core can't serialize its state yet — attempting it " +
+          "takes the whole app down, so the buttons are disabled. Use " +
+          "the game's own in-game save.",
+      );
+      return;
+    }
     const path = statePathFor(rom.name, slot);
     try {
       if (save) {

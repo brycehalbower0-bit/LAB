@@ -156,6 +156,8 @@ struct EmuCore {
     uint64_t ticks_last_frame = 0;
     std::string diag;
     std::string log_path;
+    std::string last_state_error;
+    std::vector<uint8_t> state_cache;
 };
 
 namespace {
@@ -459,6 +461,9 @@ const char *c3ds_diagnostics(EmuCore *core) {
         (unsigned)fb.active_fb,
         (unsigned)top.width, (unsigned)top.height, top.pixels.size());
     core->diag = buf;
+    if (!core->last_state_error.empty()) {
+        core->diag += "\nsavestate: " + core->last_state_error;
+    }
 
     const std::string tail = tail_lines(core->log_path, 14);
     if (!tail.empty()) {
@@ -552,20 +557,47 @@ void c3ds_set_input(EmuCore *core, const EmuInputState *input) {
     }
 }
 
-size_t c3ds_state_size(const EmuCore *core) {
+// Serialization throws (Boost.Serialization signals an unregistered
+// polymorphic class that way). Letting it cross this C ABI is an
+// uncaught exception, i.e. abort() -- the whole app dies rather than one
+// operation failing. Catch here, keep the message for diagnostics, and
+// report a status the shell can act on.
+std::vector<uint8_t> serialize_state(EmuCore *core) {
+    try {
+        core->last_state_error.clear();
+        return sys().SaveStateBuffer();
+    } catch (const std::exception &e) {
+        core->last_state_error = e.what();
+        std::fprintf(stderr, "c3ds: save state failed: %s\n", e.what());
+    } catch (...) {
+        core->last_state_error = "unknown exception";
+    }
+    return {};
+}
+
+size_t c3ds_state_size(const EmuCore *core_c) {
+    EmuCore *core = const_cast<EmuCore *>(core_c);
     if (!core->loaded) {
         return 0;
     }
-    return sys().SaveStateBuffer().size();
+    // Cache it: serializing a 3DS system is expensive, and state_save is
+    // always called straight after with the size we just reported.
+    core->state_cache = serialize_state(core);
+    return core->state_cache.size();
 }
 
-EmuStatus c3ds_state_save(const EmuCore *core, uint8_t *out, size_t size) {
+EmuStatus c3ds_state_save(const EmuCore *core_c, uint8_t *out, size_t size) {
+    EmuCore *core = const_cast<EmuCore *>(core_c);
     if (!core->loaded) {
         return EMU_ERR_INVALID_ARG;
     }
-    const auto buffer = sys().SaveStateBuffer();
+    if (core->state_cache.empty()) {
+        core->state_cache = serialize_state(core);
+    }
+    const auto buffer = std::move(core->state_cache);
+    core->state_cache.clear();
     if (buffer.empty()) {
-        return EMU_ERR_INTERNAL;
+        return EMU_ERR_UNSUPPORTED;
     }
     if (size < buffer.size()) {
         return EMU_ERR_INVALID_ARG;
@@ -582,7 +614,17 @@ EmuStatus c3ds_state_load(EmuCore *core, const uint8_t *data, size_t size) {
         return EMU_ERR_BAD_STATE;
     }
     std::vector<uint8_t> buffer(data, data + size);
-    if (!sys().LoadStateBuffer(std::move(buffer))) {
+    try {
+        core->last_state_error.clear();
+        if (!sys().LoadStateBuffer(std::move(buffer))) {
+            return EMU_ERR_BAD_STATE;
+        }
+    } catch (const std::exception &e) {
+        core->last_state_error = e.what();
+        std::fprintf(stderr, "c3ds: load state failed: %s\n", e.what());
+        return EMU_ERR_BAD_STATE;
+    } catch (...) {
+        core->last_state_error = "unknown exception";
         return EMU_ERR_BAD_STATE;
     }
     return EMU_OK;
