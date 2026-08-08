@@ -107,14 +107,14 @@ RasterizerSoftware::RasterizerSoftware(Memory::MemorySystem& memory_, Pica::Pica
       num_sw_threads{std::max(std::thread::hardware_concurrency(), 2U)},
       sw_workers{num_sw_threads, "SwRenderer workers"}, fb{memory, regs.framebuffer} {}
 
-namespace SwRenderer {
 // Profiling counters. Defined here rather than in a shared header so the
 // vendored tree needs no new include path; the adapter declares them
-// extern. Relaxed atomics: these are read once a frame for a ratio, and
-// must not perturb what they measure.
+// extern. This file is already inside namespace SwRenderer -- wrapping
+// them in another one nests it to SwRenderer::SwRenderer and the link
+// fails. Relaxed atomics: read once a frame for a ratio, and they must
+// not perturb what they measure.
 std::atomic<uint64_t> g_profile_raster_ns{0};
 std::atomic<uint64_t> g_profile_triangles{0};
-} // namespace SwRenderer
 
 void RasterizerSoftware::AddTriangle(const Pica::OutputVertex& v0, const Pica::OutputVertex& v1,
                                      const Pica::OutputVertex& v2) {

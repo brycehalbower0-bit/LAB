@@ -50,9 +50,12 @@ jobs:
           done
 
   core-3ds-experimental:
-    name: 3DS core · headless no-JIT (experimental, non-gating)
+    name: 3DS core · headless no-JIT
     runs-on: ubuntu-latest
-    continue-on-error: true
+    # Was non-gating while 3DS was exploratory. It ships now: a run
+    # that reported success while the core failed to link nearly sent a
+    # broken EAS build, which is the opposite of what a green tick means.
+    continue-on-error: false
     defaults:
       run:
         working-directory: retro-emulator-ios
