@@ -53,6 +53,10 @@ export default function GameScreen({
   const mask = useRef(0);
   const touchLayout = useRef({ w: 1, h: 1 });
   const [settings] = useSettings();
+  // Hiding the controls is how you reach the parts of the bottom screen
+  // they cover; deliberately per-session rather than persisted, since
+  // the touch screen is only in the way for particular moments.
+  const [controlsHidden, setControlsHidden] = useState(false);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -341,18 +345,31 @@ export default function GameScreen({
       )}
       </View>
 
-      {overlay ? (
-        // box-none so the gaps between buttons stay transparent to touch
-        // and reach the bottom screen underneath.
-        <View
-          style={[styles.controlLayer, controlOpacity]}
-          pointerEvents="box-none"
-        >
-          {controls}
-        </View>
-      ) : (
-        controls
-      )}
+      {!controlsHidden &&
+        (overlay ? (
+          // box-none so the gaps between buttons stay transparent to touch
+          // and reach the bottom screen underneath.
+          <View
+            style={[styles.controlLayer, controlOpacity]}
+            pointerEvents="box-none"
+          >
+            {controls}
+          </View>
+        ) : (
+          controls
+        ))}
+
+      {/* Always reachable, and never dimmed by the opacity setting --
+          at 15% a hidden show-button would be unfindable. */}
+      <Pressable
+        style={styles.hideToggle}
+        onPress={() => setControlsHidden((h) => !h)}
+        hitSlop={10}
+      >
+        <Text style={styles.hideToggleText}>
+          {controlsHidden ? "Show" : "Hide"}
+        </Text>
+      </Pressable>
     </View>
   );
 }
@@ -383,6 +400,21 @@ const styles = StyleSheet.create({
   },
   // Neutralise the stacked layout's "push me to the bottom" margin.
   stateRowOverlay: { marginTop: 14 },
+  hideToggle: {
+    position: "absolute",
+    top: 56, // clear of the status bar
+    right: 12,
+    minWidth: 56,
+    height: 32,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    backgroundColor: "#000000cc",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "#4b5563",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  hideToggleText: { color: "#e5e7eb", fontSize: 13, fontWeight: "600" },
   screenArea: { width: "100%", aspectRatio: 240 / 160, marginTop: 50 },
   screenAreaDual: { width: "100%", aspectRatio: 256 / 192 },
   screenAreaDualTop: { width: "100%", aspectRatio: 256 / 192, marginTop: 40 },
