@@ -1,0 +1,20 @@
+# What EAS Build uploads. This file REPLACES .gitignore for upload
+# filtering — which is the point: the ancestor .gitignore carries
+# `dist/` and `build/` patterns that strip real sources out of the
+# vendored core trees (azahar's dist/compatibility_list, zstd's
+# build/cmake). Git re-includes them via negations; EAS's ignore
+# implementation does not honor re-inclusion inside an excluded
+# directory, so those files silently never reached the build machine.
+#
+# Keep this list minimal and explicit.
+
+node_modules/
+.expo/
+ios/
+android/
+*.log
+
+# Never upload user content
+**/roms/
+**/saves/
+**/states/
