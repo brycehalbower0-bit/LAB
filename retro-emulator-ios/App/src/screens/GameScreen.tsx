@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   Alert,
   Pressable,
+  Share,
   StyleSheet,
   Text,
   View,
@@ -75,10 +76,21 @@ export default function GameScreen({
         `${d.fps.toFixed(1)} fps · ${d.framesRun} frames · ` +
         `${d.audioShortfalls} drops` +
         (d.lastError ? `\nlastError: ${d.lastError}` : "");
-      Alert.alert(
-        "Diagnostics",
-        head + (d.core ? `\n\n${d.core}` : "\n\n(core reports none)"),
-      );
+      const full =
+        `EmuLab diagnostics — ${rom.name}\n` +
+        head +
+        (d.core ? `\n\n${d.core}` : "\n\n(core reports none)");
+      Alert.alert("Diagnostics", full, [
+        // The alert clips a long log and can't be selected. Share is core
+        // React Native, and the iOS sheet it opens includes Copy.
+        {
+          text: "Share",
+          onPress: () => {
+            Share.share({ message: full }).catch(() => {});
+          },
+        },
+        { text: "OK", style: "cancel" },
+      ]);
     } catch (e) {
       Alert.alert("Diagnostics", `failed: ${e}`);
     }
