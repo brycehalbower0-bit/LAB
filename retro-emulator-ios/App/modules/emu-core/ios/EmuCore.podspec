@@ -36,8 +36,6 @@ Pod::Spec.new do |s|
     # melonDS targets C++17 (path::u8string() returns char8_t strings
     # under c++20, breaking FATStorage).
     'OTHER_CPLUSPLUSFLAGS' => '$(inherited) $(OTHER_CFLAGS) -std=gnu++17',
-    'LIBRARY_SEARCH_PATHS' => '$(inherited) "$(PODS_TARGET_SRCROOT)/cpp/3ds/lib"',
-    'OTHER_LDFLAGS' => '$(inherited) -force_load "$(PODS_TARGET_SRCROOT)/cpp/3ds/lib/libc3ds_core.a" '       '-lcitra_core -lcitra_common -lvideo_core -laudio_core -lnetwork '       '-lteakra -lcryptopp -lfmt -lSoundTouch -llodepng '       '-lboost_serialization -lboost_iostreams'
   }
 
   # mGBA HEADERS deliberately stay out of source_files: CocoaPods maps
@@ -59,6 +57,14 @@ Pod::Spec.new do |s|
   # Swift sees only the pure-C ABI: the bridge header plus core_api.h
   # itself (already C-clean by design — see core_api.h's header comment).
   s.public_header_files = ['EmuCoreBridge.h', 'cpp/include/core_api.h']
+
+  # The app target performs the final link, so the 3DS libraries must
+  # be declared there — pod_target_xcconfig only affects the pod's own
+  # compilation and left emu_3ds_api undefined at app link time.
+  s.user_target_xcconfig = {
+    'LIBRARY_SEARCH_PATHS' => '$(inherited) "$(PODS_ROOT)/../../modules/emu-core/ios/cpp/3ds/lib"',
+    'OTHER_LDFLAGS' => '$(inherited) -force_load "$(PODS_ROOT)/../../modules/emu-core/ios/cpp/3ds/lib/libc3ds_core.a" '       '-lcitra_core -lcitra_common -lvideo_core -laudio_core -lnetwork '       '-lteakra -lcryptopp -lfmt -lSoundTouch -llodepng '       '-lboost_serialization -lboost_iostreams'
+  }
 
   # --- 3DS core (Azahar) ---
   # Built by its own CMake rather than the source glob above: 1369
