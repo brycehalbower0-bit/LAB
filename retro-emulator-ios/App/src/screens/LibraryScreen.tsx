@@ -16,7 +16,7 @@ import {
   Text,
   View,
 } from "react-native";
-import { copyLarge, extractRomArchive, isArchive } from "../archive";
+import { copyLarge, extractRomArchive, isArchive, readAll } from "../archive";
 import { documentsRoot, ensureDirs, romsDir } from "../paths";
 
 const ROM_RE = /\.(gba|nds|3ds|cci|cxi|3dsx|app|elf)$/i;
@@ -91,6 +91,9 @@ export default function LibraryScreen({
         const source = new File(asset.uri);
         const sizeMB = ((asset.size ?? 0) / 1048576).toFixed(0);
 
+        // Per-asset, so one bad file reports itself instead of aborting
+        // the batch with a bare "Import failed" and no clue which one.
+        try {
         if (isArchive(asset.name)) {
           // tar/gzip archives stream: no size limit, bounded memory.
           const names = await extractRomArchive(source, romsDir, (p) => {
@@ -118,7 +121,12 @@ export default function LibraryScreen({
             );
             continue;
           }
-          const zipped = unzipSync(new Uint8Array(await source.arrayBuffer()));
+          // Read by stream, not source.arrayBuffer(): the picker hands
+          // back a URL still outside the sandbox (copyToCacheDirectory is
+          // off so multi-GB dumps aren't duplicated), and reading one of
+          // those in a single shot is what fails.
+          setBusy(`Reading ${asset.name}…`);
+          const zipped = unzipSync(await readAll(source));
           let found = 0;
           for (const [entryName, bytes] of Object.entries(zipped)) {
             const clean = entryName.split("/").pop() ?? entryName;
@@ -129,8 +137,13 @@ export default function LibraryScreen({
             imported.push(clean);
             found++;
           }
+          setBusy(null);
           if (found === 0) {
-            notes.push(`${asset.name}: no supported ROM inside the zip.`);
+            const inside = Object.keys(zipped);
+            notes.push(
+              `${asset.name}: no supported ROM inside the zip. ` +
+                `It contains: ${inside.slice(0, 5).join(", ") || "(nothing)"}`,
+            );
           }
         } else if (/\.(7z|rar)$/i.test(asset.name)) {
           // LZMA (7z) and RAR need heavyweight decoders; on-device they
@@ -179,6 +192,10 @@ export default function LibraryScreen({
           }
           setBusy(null);
           imported.push(asset.name);
+        }
+        } catch (e) {
+          setBusy(null);
+          notes.push(`${asset.name}: ${e}`);
         }
       }
       refresh();
