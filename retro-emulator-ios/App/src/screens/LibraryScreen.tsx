@@ -17,6 +17,8 @@ import {
 } from "react-native";
 import { ensureDirs, romsDir } from "../paths";
 
+const ROM_RE = /\.(gba|nds|3ds|cci|cxi|3dsx|app|elf)$/i;
+
 interface RomEntry {
   name: string;
   uri: string;
@@ -36,7 +38,7 @@ export default function LibraryScreen({
     const entries = romsDir
       .list()
       .filter((e): e is File => e instanceof File)
-      .filter((f) => /\.(gba|nds|3ds|cci|cxi|3dsx|app|elf)$/i.test(f.name))
+      .filter((f) => ROM_RE.test(f.name))
       .map((f) => ({ name: f.name, uri: f.uri }))
       .sort((a, b) => a.name.localeCompare(b.name));
     setRoms(entries);
@@ -45,40 +47,78 @@ export default function LibraryScreen({
   useEffect(refresh, [refresh]);
 
   async function importRom() {
+    // copyToCacheDirectory duplicates the file before we even see it —
+    // fatal for multi-GB 3DS dumps. Read straight from the picked URL.
     const result = await DocumentPicker.getDocumentAsync({
-      copyToCacheDirectory: true,
+      copyToCacheDirectory: false,
     });
     if (result.canceled || !result.assets?.length) return;
+
+    const notes: string[] = [];
+    const imported: string[] = [];
     try {
       ensureDirs();
-      const imported: string[] = [];
       for (const asset of result.assets) {
         const source = new File(asset.uri);
+        const sizeMB = ((asset.size ?? 0) / 1048576).toFixed(0);
+
         if (asset.name.toLowerCase().endsWith(".zip")) {
-          // ROMs usually arrive zipped; extract .gba entries here so the
-          // library only ever holds raw ROMs.
+          // Unzipping needs the whole archive in memory; fine for GBA/DS,
+          // impossible for a multi-GB 3DS dump.
+          if ((asset.size ?? 0) > 600 * 1048576) {
+            notes.push(
+              `${asset.name} (${sizeMB} MB) is too large to unzip on ` +
+                `device — unzip it first, then import the ROM itself.`,
+            );
+            continue;
+          }
           const zipped = unzipSync(new Uint8Array(await source.arrayBuffer()));
+          let found = 0;
           for (const [entryName, bytes] of Object.entries(zipped)) {
             const clean = entryName.split("/").pop() ?? entryName;
-            if (!/\.(gba|nds|3ds|cci|cxi|3dsx|app|elf)$/i.test(clean) || bytes.length === 0) continue;
+            if (!ROM_RE.test(clean) || bytes.length === 0) continue;
             const dest = new File(romsDir, clean);
             if (dest.exists) dest.delete();
             dest.write(bytes);
             imported.push(clean);
+            found++;
           }
+          if (found === 0) {
+            notes.push(`${asset.name}: no supported ROM inside the zip.`);
+          }
+        } else if (!ROM_RE.test(asset.name)) {
+          notes.push(
+            `${asset.name}: unsupported type. Use .gba, .nds, or ` +
+              `.3ds/.cci/.cxi/.3dsx.`,
+          );
         } else {
           const dest = new File(romsDir, asset.name);
           if (dest.exists) dest.delete();
           source.copy(dest);
-          imported.push(asset.name);
+          if (!dest.exists) {
+            notes.push(`${asset.name}: copy failed (${sizeMB} MB).`);
+          } else {
+            imported.push(asset.name);
+          }
         }
       }
       refresh();
-      if (imported.length === 0) {
+
+      // Always say something: silence was indistinguishable from a
+      // filtered-out file, a failed copy, or an out-of-memory unzip.
+      const NL = String.fromCharCode(10);
+      if (imported.length > 0) {
+        Alert.alert(
+          "Imported",
+          imported.join(NL) +
+            (notes.length ? NL + NL + notes.join(NL) : ""),
+        );
+      } else {
         Alert.alert(
           "Nothing imported",
-          "No supported ROM found — GBA (.gba), DS (.nds), or 3DS " +
-            "(.3ds/.cci/.cxi/.3dsx), zipped or not.\n\n" +
+          (notes.length ? notes.join(NL + NL) : "No supported ROM found.") +
+            NL +
+            NL +
             "3DS dumps must already be decrypted: this app never handles " +
             "console keys.",
         );
