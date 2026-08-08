@@ -16,6 +16,7 @@
 // save_data_* remains unimplemented (3DS saves are archive-based).
 
 #include <atomic>
+#include <chrono>
 #include <cstdio>
 #include <exception>
 #include <typeinfo>
@@ -48,10 +49,26 @@
 #include "core_api.h"
 #include "fb_map.h"
 
+// Profiling counters defined inside the vendored software renderer (see
+// sw_rasterizer.cpp / renderer_software.cpp). Declared here rather than
+// shared through a header so the vendored tree needs no extra include
+// path.
+namespace SwRenderer {
+extern std::atomic<uint64_t> g_profile_raster_ns;
+extern std::atomic<uint64_t> g_profile_triangles;
+extern std::atomic<uint64_t> g_profile_swap_ns;
+} // namespace SwRenderer
+
 namespace {
 
 constexpr uint32_t kTopW = 400, kTopH = 240;
 constexpr uint32_t kBotW = 320, kBotH = 240;
+
+uint64_t now_ns() {
+    return (uint64_t)std::chrono::duration_cast<std::chrono::nanoseconds>(
+               std::chrono::steady_clock::now().time_since_epoch())
+        .count();
+}
 
 // Minimal headless window: the software renderer needs no GL context;
 // PollEvents fires at VBlank right after the screen pixel buffers are
@@ -158,6 +175,23 @@ struct EmuCore {
     std::string log_path;
     std::string last_state_error;
     std::vector<uint8_t> state_cache;
+    // Rolling profile over the last kProfileWindow frames. A per-frame
+    // reading is too noisy to act on; a window is what tells us whether
+    // the CPU interpreter or the software rasterizer owns the frame.
+    static constexpr uint32_t kProfileWindow = 60;
+    uint32_t profile_frames = 0;
+    uint64_t win_wall_ns = 0;
+    uint64_t win_raster_ns = 0;
+    uint64_t win_swap_ns = 0;
+    uint64_t win_video_ns = 0;
+    uint64_t win_triangles = 0;
+    // Last completed window, held for diagnostics().
+    uint64_t prof_wall_ns = 0;
+    uint64_t prof_raster_ns = 0;
+    uint64_t prof_swap_ns = 0;
+    uint64_t prof_video_ns = 0;
+    uint64_t prof_triangles = 0;
+    uint32_t prof_frames = 0;
 };
 
 namespace {
@@ -358,6 +392,13 @@ void c3ds_run_frame(EmuCore *core) {
     }
     core->window->frame_done = false;
     const uint64_t ticks_before = sys().CoreTiming().GetGlobalTicks();
+    const uint64_t wall_before = now_ns();
+    const uint64_t raster_before =
+        SwRenderer::g_profile_raster_ns.load(std::memory_order_relaxed);
+    const uint64_t swap_before =
+        SwRenderer::g_profile_swap_ns.load(std::memory_order_relaxed);
+    const uint64_t tris_before =
+        SwRenderer::g_profile_triangles.load(std::memory_order_relaxed);
     uint64_t iters = 0;
     int status = 0;
     // Safety cap: a wedged guest must not hang the caller (CI included).
@@ -379,6 +420,28 @@ void c3ds_run_frame(EmuCore *core) {
     core->ticks_last_frame = ticks_after - ticks_before;
     core->last_ticks = ticks_after;
     core->last_pc = sys().GetRunningCore().GetPC();
+
+    core->win_wall_ns += now_ns() - wall_before;
+    core->win_raster_ns +=
+        SwRenderer::g_profile_raster_ns.load(std::memory_order_relaxed) -
+        raster_before;
+    core->win_swap_ns +=
+        SwRenderer::g_profile_swap_ns.load(std::memory_order_relaxed) -
+        swap_before;
+    core->win_triangles +=
+        SwRenderer::g_profile_triangles.load(std::memory_order_relaxed) -
+        tris_before;
+    if (++core->profile_frames >= EmuCore::kProfileWindow) {
+        core->prof_wall_ns = core->win_wall_ns;
+        core->prof_raster_ns = core->win_raster_ns;
+        core->prof_swap_ns = core->win_swap_ns;
+        core->prof_video_ns = core->win_video_ns;
+        core->prof_triangles = core->win_triangles;
+        core->prof_frames = core->profile_frames;
+        core->profile_frames = 0;
+        core->win_wall_ns = core->win_raster_ns = core->win_swap_ns = 0;
+        core->win_video_ns = core->win_triangles = 0;
+    }
 }
 
 // Last `want` lines of a file. The log backend only force-flushes at
@@ -461,6 +524,31 @@ const char *c3ds_diagnostics(EmuCore *core) {
         (unsigned)fb.active_fb,
         (unsigned)top.width, (unsigned)top.height, top.pixels.size());
     core->diag = buf;
+
+    // The profile. This is the number that decides what to optimize:
+    // "cpu" is whatever RunLoop spent that was not rasterizing or
+    // blitting, i.e. the dyncom interpreter plus HLE services.
+    if (core->prof_frames > 0 && core->prof_wall_ns > 0) {
+        const double total = (double)core->prof_wall_ns;
+        const double raster = (double)core->prof_raster_ns;
+        const double swap = (double)core->prof_swap_ns;
+        const double video = (double)core->prof_video_ns;
+        const double cpu = total - raster - swap - video;
+        char pbuf[512];
+        std::snprintf(
+            pbuf, sizeof(pbuf),
+            "\nprofile over %u frames (%.1f ms/frame):\n"
+            "  cpu+hle   %5.1f%%\n"
+            "  raster    %5.1f%%  (%llu tris/frame)\n"
+            "  fb blit   %5.1f%%\n"
+            "  to shell  %5.1f%%",
+            core->prof_frames, total / core->prof_frames / 1e6,
+            100.0 * cpu / total, 100.0 * raster / total,
+            (unsigned long long)(core->prof_triangles / core->prof_frames),
+            100.0 * swap / total, 100.0 * video / total);
+        core->diag += pbuf;
+    }
+
     if (!core->last_state_error.empty()) {
         core->diag += "\nsavestate: " + core->last_state_error;
     }
@@ -480,6 +568,7 @@ void c3ds_get_video(const EmuCore *core_c, uint32_t screen,
     if (!core->loaded || screen > 1) {
         return;
     }
+    const uint64_t video_start = now_ns();
     const auto &renderer =
         static_cast<SwRenderer::RendererSoftware &>(sys().GPU().Renderer());
     const auto id = screen == 0 ? VideoCore::ScreenId::TopLeft
@@ -492,19 +581,31 @@ void c3ds_get_video(const EmuCore *core_c, uint32_t screen,
     dst.assign((size_t)w * h, 0xFF000000u);
 
     if (!info.pixels.empty()) {
-        // See fb_map.h -- the mapping is factored out because getting it
-        // wrong is invisible to the contract test.
+        // See fb_map.h for the mapping. Both sides are contiguous along
+        // x -- source index is y * native_w + x, destination is y * w + x
+        // -- so this is a row copy, not a per-pixel one. The old version
+        // did a bounds check and a 4-byte memcpy per pixel, 172800 times
+        // a frame across both screens.
         const uint32_t native_w = c3ds_fb_width(info.width, info.height);
         const uint32_t native_h = c3ds_fb_height(info.width, info.height);
-        for (uint32_t y = 0; y < h && y < native_h; y++) {
-            for (uint32_t x = 0; x < w && x < native_w; x++) {
-                const size_t src_off =
-                    c3ds_fb_index(x, y, info.width, info.height) * 4;
-                if (src_off + 3 < info.pixels.size()) {
-                    uint32_t px;
-                    std::memcpy(&px, info.pixels.data() + src_off, 4);
-                    dst[(size_t)y * w + x] = px | 0xFF000000u;
-                }
+        const uint32_t rows = h < native_h ? h : native_h;
+        const uint32_t cols = w < native_w ? w : native_w;
+        const size_t have = info.pixels.size() / 4;
+        for (uint32_t y = 0; y < rows; y++) {
+            const size_t src_index = c3ds_fb_index(0, y, info.width, info.height);
+            if (src_index + cols > have) {
+                break; // truncated frame: leave the rest at opaque black
+            }
+            std::memcpy(&dst[(size_t)y * w], info.pixels.data() + src_index * 4,
+                        (size_t)cols * 4);
+        }
+        // Citra decodes every framebuffer format to alpha=255, so the
+        // per-pixel OR the old loop did was redundant. Assert it rather
+        // than assume it: a format that ever decoded alpha=0 would show
+        // as a fully transparent screen, which is worth catching loudly.
+        if (rows > 0 && cols > 0 && (dst[0] & 0xFF000000u) != 0xFF000000u) {
+            for (size_t i = 0, n = (size_t)w * h; i < n; i++) {
+                dst[i] |= 0xFF000000u;
             }
         }
     }
@@ -513,6 +614,7 @@ void c3ds_get_video(const EmuCore *core_c, uint32_t screen,
     out->width = w;
     out->height = h;
     out->stride_pixels = w;
+    core->win_video_ns += now_ns() - video_start;
 }
 
 uint32_t c3ds_read_audio(EmuCore *core, int16_t *out, uint32_t max_frames) {

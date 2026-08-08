@@ -2,6 +2,8 @@
 // Licensed under GPLv2 or any later version
 // Refer to the license.txt file included.
 
+#include <atomic>
+#include <chrono>
 #include <boost/container/static_vector.hpp>
 #include "common/logging/log.h"
 #include "common/microprofile.h"
@@ -105,8 +107,29 @@ RasterizerSoftware::RasterizerSoftware(Memory::MemorySystem& memory_, Pica::Pica
       num_sw_threads{std::max(std::thread::hardware_concurrency(), 2U)},
       sw_workers{num_sw_threads, "SwRenderer workers"}, fb{memory, regs.framebuffer} {}
 
+namespace SwRenderer {
+// Profiling counters. Defined here rather than in a shared header so the
+// vendored tree needs no new include path; the adapter declares them
+// extern. Relaxed atomics: these are read once a frame for a ratio, and
+// must not perturb what they measure.
+std::atomic<uint64_t> g_profile_raster_ns{0};
+std::atomic<uint64_t> g_profile_triangles{0};
+} // namespace SwRenderer
+
 void RasterizerSoftware::AddTriangle(const Pica::OutputVertex& v0, const Pica::OutputVertex& v1,
                                      const Pica::OutputVertex& v2) {
+    const auto profile_start = std::chrono::steady_clock::now();
+    struct ProfileScope {
+        std::chrono::steady_clock::time_point start;
+        ~ProfileScope() {
+            const auto ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
+                                std::chrono::steady_clock::now() - start)
+                                .count();
+            SwRenderer::g_profile_raster_ns.fetch_add((uint64_t)ns,
+                                                      std::memory_order_relaxed);
+            SwRenderer::g_profile_triangles.fetch_add(1, std::memory_order_relaxed);
+        }
+    } profile_scope{profile_start};
     /**
      * Clipping a planar n-gon against a plane will remove at least 1 vertex and introduces 2 at
      * the new edge (or less in degenerate cases). As such, we can say that each clipping plane

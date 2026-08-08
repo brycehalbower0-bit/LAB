@@ -2,6 +2,8 @@
 // Licensed under GPLv2 or any later version
 // Refer to the license.txt file included.
 
+#include <atomic>
+#include <chrono>
 #include "common/color.h"
 #include "core/core.h"
 #include "video_core/gpu.h"
@@ -17,10 +19,21 @@ RendererSoftware::RendererSoftware(Core::System& system, Pica::PicaCore& pica_,
 
 RendererSoftware::~RendererSoftware() = default;
 
+// Display-transfer cost: turning the guest framebuffers into ScreenInfo.
+// Separate from g_profile_raster_ns (3D rasterization) so the two can be
+// told apart -- they call for completely different fixes.
+std::atomic<uint64_t> g_profile_swap_ns{0};
+
 void RendererSoftware::SwapBuffers() {
+    const auto profile_start = std::chrono::steady_clock::now();
     system.perf_stats->StartSwap();
     PrepareRenderTarget();
     system.perf_stats->EndSwap();
+    g_profile_swap_ns.fetch_add(
+        (uint64_t)std::chrono::duration_cast<std::chrono::nanoseconds>(
+            std::chrono::steady_clock::now() - profile_start)
+            .count(),
+        std::memory_order_relaxed);
     EndFrame();
 }
 
