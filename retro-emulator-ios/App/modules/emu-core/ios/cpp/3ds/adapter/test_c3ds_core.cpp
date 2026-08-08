@@ -147,8 +147,7 @@ int main() {
         input = EmuInputState{};
         api->set_input(core, &input);
         api->run_frame(core);
-        std::printf("input: buttons/analog/touch cycled cleanly
-");
+        std::printf("input: buttons/analog/touch cycled cleanly\n");
     }
 
     {
