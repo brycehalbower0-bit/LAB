@@ -71,6 +71,21 @@ export default function SettingsScreen({ onBack }: { onBack: () => void }) {
         }}
       />
 
+      <Row
+        label="Frame skip"
+        value={settings.frameSkip === 0 ? "Off" : `${settings.frameSkip}`}
+        hint={
+          settings.frameSkip === 0
+            ? "Every frame is drawn. Skipping draws the picture less often while the game runs at full logic speed."
+            : `Drawing 1 of every ${settings.frameSkip + 1} frames. The game plays at normal speed; the picture updates less smoothly.`
+        }
+        onPress={() => {
+          const next = (settings.frameSkip + 1) % 4;
+          update({ frameSkip: next });
+          EmuCore.setOption("frame_skip", next);
+        }}
+      />
+
       <Text style={styles.section}>Controls</Text>
 
       <Row

@@ -116,8 +116,17 @@ RasterizerSoftware::RasterizerSoftware(Memory::MemorySystem& memory_, Pica::Pica
 std::atomic<uint64_t> g_profile_raster_ns{0};
 std::atomic<uint64_t> g_profile_triangles{0};
 
+// Frame-skip: when set, drop triangle work entirely for this frame.
+// Game logic still runs every frame (the adapter drives this per-frame);
+// the framebuffer just keeps the previous frame's contents, which 3DS
+// titles clear and redraw anyway. Classic frameskip.
+std::atomic<bool> g_skip_rasterization{false};
+
 void RasterizerSoftware::AddTriangle(const Pica::OutputVertex& v0, const Pica::OutputVertex& v1,
                                      const Pica::OutputVertex& v2) {
+    if (g_skip_rasterization.load(std::memory_order_relaxed)) {
+        return; // frame-skip: this frame is never displayed
+    }
     const auto profile_start = std::chrono::steady_clock::now();
     struct ProfileScope {
         std::chrono::steady_clock::time_point start;

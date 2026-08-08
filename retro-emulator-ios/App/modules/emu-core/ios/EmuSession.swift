@@ -48,6 +48,11 @@ final class EmuSession: NSObject {
 
   let frameLock = NSLock()
   private(set) var frames: [ScreenFrame] = []
+  /// Bumped whenever `frames` gets new content. The Metal views compare
+  /// against it and skip encoding when nothing changed: the display
+  /// refreshes at 60 Hz, but an 18 fps guest produces 18 new textures a
+  /// second, and re-presenting the other 42 costs GPU for no pixels.
+  private(set) var frameGeneration: UInt64 = 0
 
   private let inputLock = NSLock()
   private var pendingButtons: UInt32 = 0
@@ -384,6 +389,9 @@ final class EmuSession: NSObject {
           }
         }
       }
+    }
+    if todo > 0 {
+      frameGeneration &+= 1
     }
     frameLock.unlock()
     coreLock.unlock()

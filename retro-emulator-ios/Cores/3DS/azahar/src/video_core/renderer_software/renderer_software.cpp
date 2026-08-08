@@ -25,7 +25,18 @@ RendererSoftware::~RendererSoftware() = default;
 // told apart -- they call for completely different fixes.
 std::atomic<uint64_t> g_profile_swap_ns{0};
 
+namespace {
+// Set by the embedder (see sw_rasterizer.cpp for the write side).
+} // namespace
+extern std::atomic<bool> g_skip_rasterization;
+
 void RendererSoftware::SwapBuffers() {
+    // On a skipped frame the framebuffers were not redrawn; decoding
+    // them again would produce the identical ScreenInfo at full cost.
+    if (g_skip_rasterization.load(std::memory_order_relaxed)) {
+        EndFrame();
+        return;
+    }
     const auto profile_start = std::chrono::steady_clock::now();
     system.perf_stats->StartSwap();
     PrepareRenderTarget();

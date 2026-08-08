@@ -31,6 +31,12 @@ export interface Settings {
    * CPU timing can stutter, run their logic slowly, or misbehave.
    */
   cpuClock: number;
+  /**
+   * Rasterize 1 of every (frameSkip + 1) frames (3DS). Game logic runs
+   * every frame, so speed and inputs stay correct; the picture updates
+   * less often. The cheapest frame rate there is.
+   */
+  frameSkip: number;
 }
 
 export const DEFAULTS: Settings = {
@@ -38,6 +44,7 @@ export const DEFAULTS: Settings = {
   overlayControls: true,
   videoFilter: "smooth",
   cpuClock: 100,
+  frameSkip: 0,
 };
 
 const file = new File(documentsRoot, "settings.json");
@@ -66,6 +73,10 @@ function sanitize(raw: unknown): Settings {
       typeof o.cpuClock === "number" && Number.isFinite(o.cpuClock)
         ? clamp(Math.round(o.cpuClock), 25, 200)
         : DEFAULTS.cpuClock,
+    frameSkip:
+      typeof o.frameSkip === "number" && Number.isFinite(o.frameSkip)
+        ? clamp(Math.round(o.frameSkip), 0, 4)
+        : DEFAULTS.frameSkip,
   };
 }
 

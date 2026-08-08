@@ -58,6 +58,7 @@ namespace SwRenderer {
 extern std::atomic<uint64_t> g_profile_raster_ns;
 extern std::atomic<uint64_t> g_profile_triangles;
 extern std::atomic<uint64_t> g_profile_swap_ns;
+extern std::atomic<bool> g_skip_rasterization;
 } // namespace SwRenderer
 
 namespace {
@@ -214,6 +215,8 @@ struct EmuCore {
     std::string log_path;
     std::string last_state_error;
     std::vector<uint8_t> state_cache;
+    // Rasterize 1 of every (frame_skip + 1) frames; logic runs on all.
+    int32_t frame_skip = 0;
     // Rolling profile over the last kProfileWindow frames. A per-frame
     // reading is too noisy to act on; a window is what tells us whether
     // the CPU interpreter or the software rasterizer owns the frame.
@@ -443,9 +446,15 @@ EmuStatus c3ds_load_rom(EmuCore *core, const uint8_t *data, size_t size) {
 // is safe here: Azahar reads cpu_clock_percentage when it reschedules,
 // so the change takes effect on the next timeslice.
 EmuStatus c3ds_set_option(EmuCore *core, const char *key, int32_t value) {
-    (void)core;
     if (!key) {
         return EMU_ERR_INVALID_ARG;
+    }
+    if (std::strcmp(key, "frame_skip") == 0) {
+        if (value < 0 || value > 4) {
+            return EMU_ERR_INVALID_ARG;
+        }
+        core->frame_skip = value;
+        return EMU_OK;
     }
     if (std::strcmp(key, "cpu_clock") == 0) {
         if (value < 5 || value > 400) {
@@ -468,6 +477,10 @@ void c3ds_run_frame(EmuCore *core) {
         return;
     }
     core->window->frame_done = false;
+    SwRenderer::g_skip_rasterization.store(
+        core->frame_skip > 0 &&
+            (core->frames_run % (uint64_t)(core->frame_skip + 1)) != 0,
+        std::memory_order_relaxed);
     const uint64_t ticks_before = sys().CoreTiming().GetGlobalTicks();
     const uint64_t wall_before = now_ns();
     const uint64_t raster_before =

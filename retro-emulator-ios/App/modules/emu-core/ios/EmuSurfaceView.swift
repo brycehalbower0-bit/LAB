@@ -108,12 +108,31 @@ final class EmuSurfaceView: ExpoView, MTKViewDelegate {
 
   func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {}
 
+  private var lastDrawnGeneration: UInt64 = 0
+  private var lastPipeline: ObjectIdentifier?
+
   func draw(in view: MTKView) {
+    // Present only when there is something new: a new emulated frame, a
+    // pipeline (filter) switch, or nothing on screen yet. The display
+    // calls this at 60 Hz regardless; re-encoding an unchanged texture
+    // is GPU and battery spent on producing identical pixels.
+    let session = EmuSession.shared
+    session.frameLock.lock()
+    let generation = session.frameGeneration
+    session.frameLock.unlock()
+    let pipelineId = pipeline.map(ObjectIdentifier.init)
+    if generation == lastDrawnGeneration && pipelineId == lastPipeline
+        && texture != nil {
+      return
+    }
+
     guard let pipeline,
           let commandQueue,
           let drawable = view.currentDrawable,
           let passDescriptor = view.currentRenderPassDescriptor,
           let commandBuffer = commandQueue.makeCommandBuffer() else { return }
+    lastDrawnGeneration = generation
+    lastPipeline = pipelineId
 
     // Pull the latest completed frame. Upload happens under the lock;
     // it's a ~200 KB CPU copy, cheap at 60 Hz.

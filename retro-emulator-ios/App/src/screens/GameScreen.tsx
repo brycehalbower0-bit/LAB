@@ -115,6 +115,9 @@ export default function GameScreen({
         if (settings.cpuClock !== 100) {
           EmuCore.setOption("cpu_clock", settings.cpuClock);
         }
+        if (settings.frameSkip > 0) {
+          EmuCore.setOption("frame_skip", settings.frameSkip);
+        }
         // Auto-resume: offer the snapshot taken when the game was last
         // left. The in-game save (battery) is untouched either way.
         const autoPath = autoStatePathFor(rom.name);
