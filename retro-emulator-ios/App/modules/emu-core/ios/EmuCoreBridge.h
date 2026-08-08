@@ -25,6 +25,10 @@ const EmuCoreApi *emu_gba_api(void);
 /* NDS core (Cores/NDS/nds_core.cpp over vendored melonDS, GPLv3). */
 const EmuCoreApi *emu_nds_api(void);
 
+/* 3DS core (Cores/3DS/adapter over vendored Azahar, GPL-2.0). Built by
+   the podspec's CMake script phase, not the source glob. */
+const EmuCoreApi *emu_3ds_api(void);
+
 #ifdef __cplusplus
 }
 #endif

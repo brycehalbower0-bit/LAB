@@ -106,15 +106,63 @@ final class EmuSession: NSObject {
   }
 
   func loadRom(romPath: String, savePath: String?) throws -> [String: Any] {
-    let romData = try Data(contentsOf: URL(fileURLWithPath: romPath))
     let ext = (romPath as NSString).pathExtension.lowercased()
     let api: UnsafePointer<EmuCoreApi>?
     switch ext {
     case "gba": api = emu_gba_api()
     case "nds": api = emu_nds_api()
+    case "3ds", "cci", "cxi", "3dsx", "app", "elf": api = emu_3ds_api()
     default: api = emu_null_api()
     }
+    // Prefer path loading when the core offers it (3DS: content up to
+    // 4 GB, file-backed loader — don't double-buffer it in memory).
+    if let api, api.pointee.load_rom_path != nil {
+      return try loadByPath(api: api, romPath: romPath, savePath: savePath)
+    }
+    let romData = try Data(contentsOf: URL(fileURLWithPath: romPath))
     return try load(api: api, romData: romData, savePath: savePath)
+  }
+
+  /// Path-based load for cores whose loaders are file-backed (3DS).
+  private func loadByPath(api newApi: UnsafePointer<EmuCoreApi>,
+                          romPath: String, savePath: String?) throws -> [String: Any] {
+    unload()
+    coreLock.lock()
+    defer { coreLock.unlock() }
+
+    guard let newCore = newApi.pointee.create() else {
+      throw EmuError(message: "core create failed")
+    }
+    var d = EmuCoreDesc()
+    newApi.pointee.describe(newCore, &d)
+
+    guard let loadPath = newApi.pointee.load_rom_path else {
+      newApi.pointee.destroy(newCore)
+      throw EmuError(message: "core lost load_rom_path")
+    }
+    let status = romPath.withCString { loadPath(newCore, $0) }
+    guard status == EMU_OK else {
+      newApi.pointee.destroy(newCore)
+      throw EmuError(message: "load failed: \(Self.describe(status: status))")
+    }
+
+    newApi.pointee.reset(newCore)
+    api = newApi
+    core = newCore
+    desc = d
+    self.savePath = savePath
+    lastError = nil
+    framesRun = 0
+    measuredFps = 0
+
+    return [
+      "name": d.name.map { String(cString: $0) } ?? "unknown",
+      "screenCount": Int(d.screen_count),
+      "width": Int(d.screens.0.width),
+      "height": Int(d.screens.0.height),
+      "fps": d.native_fps,
+      "sampleRate": Int(d.audio_sample_rate),
+    ]
   }
 
   private func load(api newApi: UnsafePointer<EmuCoreApi>?, romData: Data, savePath: String?) throws -> [String: Any] {
