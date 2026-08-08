@@ -59,6 +59,25 @@ export default function GameScreen({
     return () => clearInterval(timer);
   }, []);
 
+  // Read fresh rather than using the polled copy: the interesting cases
+  // (a wedged guest, a failed load) are exactly the ones where the last
+  // poll may be stale or missing.
+  async function showDiagnostics() {
+    try {
+      const d = await EmuCore.getDiagnostics();
+      const head =
+        `${d.fps.toFixed(1)} fps · ${d.framesRun} frames · ` +
+        `${d.audioShortfalls} drops` +
+        (d.lastError ? `\nlastError: ${d.lastError}` : "");
+      Alert.alert(
+        "Diagnostics",
+        head + (d.core ? `\n\n${d.core}` : "\n\n(core reports none)"),
+      );
+    } catch (e) {
+      Alert.alert("Diagnostics", `failed: ${e}`);
+    }
+  }
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -222,6 +241,12 @@ export default function GameScreen({
           <Text style={[styles.menuText, ffIndex > 0 && styles.ffActive]}>
             {FF_STEPS[ffIndex]}×
           </Text>
+        </Pressable>
+        {/* Plain tap, not a long-press on the fps badge: that badge sits
+            over a native Metal view and re-renders on every diagnostics
+            poll, so the press never survived long enough to fire. */}
+        <Pressable style={styles.menuButton} onPress={showDiagnostics}>
+          <Text style={styles.menuText}>?</Text>
         </Pressable>
         {pad("R", Buttons.R, styles.shoulder)}
       </View>
