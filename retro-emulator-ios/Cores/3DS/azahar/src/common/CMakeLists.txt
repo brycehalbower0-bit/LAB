@@ -116,7 +116,9 @@ if (UNIX AND NOT APPLE)
   target_link_libraries(citra_common PRIVATE gamemode)
 endif()
 
-if (APPLE AND NOT ENABLE_LIBRETRO)
+# retro-emulator-ios patch: these are macOS-only (Cocoa/NSScreen) and
+# only the Qt frontend calls them; iOS embedders must not compile them.
+if (APPLE AND NOT IOS AND NOT ENABLE_LIBRETRO)
   target_sources(citra_common PUBLIC
     apple_authorization.h
     apple_authorization.cpp
