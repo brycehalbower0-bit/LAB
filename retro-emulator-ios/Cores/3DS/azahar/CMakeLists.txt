@@ -280,9 +280,14 @@ if (EXISTS "${PROJECT_SOURCE_DIR}/.git/objects")
     check_submodules_present()
 endif()
 
-configure_file(${PROJECT_SOURCE_DIR}/dist/compatibility_list/compatibility_list.qrc
-               ${PROJECT_BINARY_DIR}/dist/compatibility_list/compatibility_list.qrc
-               COPYONLY)
+# retro-emulator-ios patch: dist/ is Qt-frontend data we never build,
+# and 'dist/' is an unanchored ignore pattern in host repos, so the
+# directory may legitimately be absent. Guard rather than require.
+if (EXISTS ${PROJECT_SOURCE_DIR}/dist/compatibility_list/compatibility_list.qrc)
+    configure_file(${PROJECT_SOURCE_DIR}/dist/compatibility_list/compatibility_list.qrc
+                   ${PROJECT_BINARY_DIR}/dist/compatibility_list/compatibility_list.qrc
+                   COPYONLY)
+endif()
 if (EXISTS ${PROJECT_SOURCE_DIR}/dist/compatibility_list/compatibility_list.json)
     file(COPY "${PROJECT_SOURCE_DIR}/dist/compatibility_list/compatibility_list.json"
         DESTINATION "${PROJECT_BINARY_DIR}/dist/compatibility_list/")
