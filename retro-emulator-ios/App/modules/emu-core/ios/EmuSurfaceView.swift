@@ -120,7 +120,7 @@ final class EmuSurfaceView: ExpoView, MTKViewDelegate {
     session.frameLock.lock()
     let generation = session.frameGeneration
     session.frameLock.unlock()
-    let pipelineId = pipeline.map(ObjectIdentifier.init)
+    let pipelineId = pipeline.map { ObjectIdentifier($0) }
     if generation == lastDrawnGeneration && pipelineId == lastPipeline
         && texture != nil {
       return
@@ -134,9 +134,8 @@ final class EmuSurfaceView: ExpoView, MTKViewDelegate {
     lastDrawnGeneration = generation
     lastPipeline = pipelineId
 
-    // Pull the latest completed frame. Upload happens under the lock;
-    // it's a ~200 KB CPU copy, cheap at 60 Hz.
-    let session = EmuSession.shared
+    // Pull the latest completed frame (`session` from the generation
+    // check above). Upload happens under the lock; ~200 KB CPU copy.
     session.frameLock.lock()
     if screenIndex < session.frames.count {
       let frame = session.frames[screenIndex]
