@@ -42,7 +42,14 @@ for (const [src, dest] of files) {
 // layer, Cores/GBA/README.md records provenance). Only the directories
 // the LIBMGBA_ONLY build compiles are copied; CI's "Dump mGBA compile
 // manifest" step is the ground truth if this list needs revisiting.
-import { cpSync, rmSync } from "node:fs";
+import { cpSync, lstatSync, rmSync } from "node:fs";
+
+// cpSync copies symlinks by resolving them to an ABSOLUTE path, so a tree
+// synced on Windows and re-synced on the Linux CI runner differs in every
+// link -- the drift check fails on machine paths, not on content. None of
+// the links in these trees are compiled (docs, .so build artifacts), so
+// skip them. Same spirit as the no-vendored-.gitignore rule.
+const skipSymlinks = (src) => !lstatSync(src).isSymbolicLink();
 
 const mgbaSrc = join(repoRoot, "Cores", "GBA", "mgba");
 const mgbaDest = join(destRoot, "gba", "mgba");
@@ -61,7 +68,7 @@ const mgbaDirs = [
   "src/third-party/inih",
 ];
 for (const dir of mgbaDirs) {
-  cpSync(join(mgbaSrc, dir), join(mgbaDest, dir), { recursive: true });
+  cpSync(join(mgbaSrc, dir), join(mgbaDest, dir), { recursive: true, filter: skipSymlinks });
 }
 cpSync(join(mgbaSrc, "LICENSE"), join(mgbaDest, "LICENSE"));
 
@@ -141,7 +148,7 @@ console.log(`synced Cores/GBA/mgba (manifest-pruned) -> gba/mgba`);
 const melondsSrc = join(repoRoot, "Cores", "NDS", "melonds");
 const melondsDest = join(destRoot, "nds", "melonds");
 rmSync(melondsDest, { recursive: true, force: true });
-cpSync(join(melondsSrc, "src"), join(melondsDest, "src"), { recursive: true });
+cpSync(join(melondsSrc, "src"), join(melondsDest, "src"), { recursive: true, filter: skipSymlinks });
 cpSync(join(melondsSrc, "LICENSE"), join(melondsDest, "LICENSE"));
 
 const ndsCompiled = new Set([
@@ -226,12 +233,12 @@ console.log("synced Cores/NDS/melonds (manifest-pruned, version.h) -> nds/melond
 const azaharSrc = join(repoRoot, "Cores", "3DS", "azahar");
 const azaharDest = join(destRoot, "3ds", "azahar");
 rmSync(azaharDest, { recursive: true, force: true });
-cpSync(azaharSrc, azaharDest, { recursive: true });
+cpSync(azaharSrc, azaharDest, { recursive: true, filter: skipSymlinks });
 // The adapter lives beside it (azahar's CMake includes ../adapter).
 const adapterSrc = join(repoRoot, "Cores", "3DS", "adapter");
 const adapterDest = join(destRoot, "3ds", "adapter");
 rmSync(adapterDest, { recursive: true, force: true });
-cpSync(adapterSrc, adapterDest, { recursive: true });
+cpSync(adapterSrc, adapterDest, { recursive: true, filter: skipSymlinks });
 cpSync(join(repoRoot, "Cores", "3DS", "no-jit-headless.cmake"),
        join(destRoot, "3ds", "no-jit-headless.cmake"));
 console.log("synced Cores/3DS (azahar + adapter + cache file) -> 3ds/");
