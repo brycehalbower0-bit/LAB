@@ -28,9 +28,22 @@ vertex VOut emu_vertex(uint vid [[vertex_id]]) {
   return out;
 }
 
+// Two samplers, chosen per pipeline rather than branched per pixel.
+//
+// nearest gives exact source pixels, but none of these screens divides
+// evenly into a phone display (a 400px 3DS screen into ~1170 physical
+// px is 2.9x), so some source pixels come out a row wider than their
+// neighbours -- uneven edges, and shimmer on scrolling text. linear
+// trades that for a slight softness.
 fragment float4 emu_fragment(VOut in [[stage_in]],
                              texture2d<float> tex [[texture(0)]]) {
   constexpr sampler s(coord::normalized, filter::nearest);
+  return tex.sample(s, in.uv);
+}
+
+fragment float4 emu_fragment_smooth(VOut in [[stage_in]],
+                                    texture2d<float> tex [[texture(0)]]) {
+  constexpr sampler s(coord::normalized, filter::linear);
   return tex.sample(s, in.uv);
 }
 """
@@ -38,9 +51,17 @@ fragment float4 emu_fragment(VOut in [[stage_in]],
 final class EmuSurfaceView: ExpoView, MTKViewDelegate {
   var screenIndex = 0
 
+  /// "sharp" (nearest) or "smooth" (linear). Both pipelines are built up
+  /// front so switching is a pointer swap, not a shader compile.
+  var filter: String = "smooth" {
+    didSet { pipeline = filter == "sharp" ? sharpPipeline : smoothPipeline }
+  }
+
   private let mtkView = MTKView()
   private var commandQueue: MTLCommandQueue?
   private var pipeline: MTLRenderPipelineState?
+  private var sharpPipeline: MTLRenderPipelineState?
+  private var smoothPipeline: MTLRenderPipelineState?
   private var texture: MTLTexture?
 
   required init(appContext: AppContext? = nil) {
@@ -62,11 +83,17 @@ final class EmuSurfaceView: ExpoView, MTKViewDelegate {
     commandQueue = device.makeCommandQueue()
     do {
       let library = try device.makeLibrary(source: shaderSource, options: nil)
-      let desc = MTLRenderPipelineDescriptor()
-      desc.vertexFunction = library.makeFunction(name: "emu_vertex")
-      desc.fragmentFunction = library.makeFunction(name: "emu_fragment")
-      desc.colorAttachments[0].pixelFormat = mtkView.colorPixelFormat
-      pipeline = try device.makeRenderPipelineState(descriptor: desc)
+      let vertexFn = library.makeFunction(name: "emu_vertex")
+      func makePipeline(_ fragment: String) throws -> MTLRenderPipelineState {
+        let desc = MTLRenderPipelineDescriptor()
+        desc.vertexFunction = vertexFn
+        desc.fragmentFunction = library.makeFunction(name: fragment)
+        desc.colorAttachments[0].pixelFormat = mtkView.colorPixelFormat
+        return try device.makeRenderPipelineState(descriptor: desc)
+      }
+      sharpPipeline = try makePipeline("emu_fragment")
+      smoothPipeline = try makePipeline("emu_fragment_smooth")
+      pipeline = filter == "sharp" ? sharpPipeline : smoothPipeline
     } catch {
       EmuSession.shared.reportError("Metal pipeline: \(error.localizedDescription)")
     }

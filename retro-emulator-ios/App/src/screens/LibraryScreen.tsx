@@ -28,9 +28,11 @@ interface RomEntry {
 
 export default function LibraryScreen({
   onOpenDiagnostics,
+  onOpenSettings,
   onOpenRom,
 }: {
   onOpenDiagnostics: () => void;
+  onOpenSettings: () => void;
   onOpenRom: (rom: RomEntry) => void;
 }) {
   const [roms, setRoms] = useState<RomEntry[]>([]);
@@ -253,6 +255,10 @@ export default function LibraryScreen({
           </Pressable>
         )}
       />
+
+      <Pressable style={styles.settingsButton} onPress={onOpenSettings}>
+        <Text style={styles.settingsIcon}>⚙</Text>
+      </Pressable>
     </View>
   );
 }
@@ -277,4 +283,16 @@ const styles = StyleSheet.create({
     borderBottomColor: "#1f2937",
   },
   romName: { color: "#e5e7eb", fontSize: 16 },
+  settingsButton: {
+    position: "absolute",
+    right: 20,
+    bottom: 40,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: "#1f2937",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  settingsIcon: { color: "#9ca3af", fontSize: 24 },
 });

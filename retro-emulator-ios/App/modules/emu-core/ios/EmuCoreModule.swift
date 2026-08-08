@@ -74,6 +74,9 @@ public class EmuCoreModule: Module {
       Prop("screenIndex") { (view: EmuSurfaceView, index: Int) in
         view.screenIndex = index
       }
+      Prop("filter") { (view: EmuSurfaceView, value: String) in
+        view.filter = value
+      }
     }
   }
 }

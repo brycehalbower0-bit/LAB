@@ -48,6 +48,8 @@ export const EmuCore = requireNativeModule<EmuCoreModule>("EmuCore");
 
 export interface EmuSurfaceProps {
   screenIndex?: number;
+  /** "sharp" = nearest-neighbour, "smooth" = linear. */
+  filter?: "sharp" | "smooth";
   style?: StyleProp<ViewStyle>;
 }
 

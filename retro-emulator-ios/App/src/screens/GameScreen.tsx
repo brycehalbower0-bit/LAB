@@ -28,6 +28,7 @@ import {
   statePathFor,
   toPosixPath,
 } from "../paths";
+import { useSettings } from "../settings";
 
 const FF_STEPS = [1, 2, 4, 8];
 
@@ -51,6 +52,7 @@ export default function GameScreen({
   const [desc, setDesc] = useState<CoreDesc | null>(null);
   const mask = useRef(0);
   const touchLayout = useRef({ w: 1, h: 1 });
+  const [settings] = useSettings();
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -182,55 +184,16 @@ export default function GameScreen({
     );
   };
 
-  return (
-    <View style={styles.container}>
-      <View style={[isDual ? styles.screenAreaDualTop : styles.screenArea, is3ds && styles.top3ds]}>
-        <EmuSurfaceView screenIndex={0} style={styles.surface} />
-        {status === "loading" && <Text style={styles.overlayMsg}>Loading…</Text>}
-        {status === "error" && (
-          <Text style={styles.overlayError}>{error ?? "failed"}</Text>
-        )}
-        {diag && status === "running" && (
-          // Long-press for the core's own report: a frame rate alone can't
-          // tell "emulating" from "spinning without executing anything".
-          <Pressable
-            onLongPress={() =>
-              Alert.alert(
-                "Core diagnostics",
-                typeof diag.core === "string"
-                  ? diag.core
-                  : "this core reports no diagnostics",
-              )
-            }
-            delayLongPress={500}
-            style={styles.fpsBadgeHit}
-          >
-            <Text style={styles.fpsBadge}>
-              {diag.fps.toFixed(1)} fps · {diag.audioShortfalls} drops
-            </Text>
-          </Pressable>
-        )}
-      </View>
-      {isDual && (
-        <View
-          style={[styles.screenAreaDual, is3ds && styles.bottom3ds]}
-          onLayout={(e) => {
-            touchLayout.current = {
-              w: e.nativeEvent.layout.width,
-              h: e.nativeEvent.layout.height,
-            };
-          }}
-          onStartShouldSetResponder={() => true}
-          onMoveShouldSetResponder={() => true}
-          onResponderGrant={(e) => touchEvent(e, true)}
-          onResponderMove={(e) => touchEvent(e, true)}
-          onResponderRelease={(e) => touchEvent(e, false)}
-          onResponderTerminate={(e) => touchEvent(e, false)}
-        >
-          <EmuSurfaceView screenIndex={1} style={styles.surface} />
-        </View>
-      )}
+  // Two layouts. "stacked" keeps screens and controls in separate bands.
+  // "overlay" gives the whole display to the screens and floats the
+  // controls on top at the user's opacity -- on a dual-screen system the
+  // stack is 1.35x as tall as it is wide, so it is width-limited and
+  // leaves room underneath for the controls to sit over.
+  const overlay = settings.overlayControls;
+  const controlOpacity = { opacity: settings.controlOpacity };
 
+  const controls = (
+    <>
       {/* shoulder row */}
       <View style={styles.shoulderRow}>
         {pad("L", Buttons.L, styles.shoulder)}
@@ -300,15 +263,124 @@ export default function GameScreen({
           </View>
         ))}
       </View>
+    </>
+  );
+
+  return (
+    <View style={styles.container}>
+      <View
+        style={[
+          overlay ? styles.screensOverlay : styles.screensStacked,
+          // Fill the display in overlay mode; the screens are centred and
+          // the controls float over whatever is left.
+        ]}
+        pointerEvents="box-none"
+      >
+      <View
+        style={[
+          isDual ? styles.screenAreaDualTop : styles.screenArea,
+          is3ds && styles.top3ds,
+          overlay && styles.screenAreaFlush,
+        ]}
+      >
+        <EmuSurfaceView
+          screenIndex={0}
+          filter={settings.videoFilter}
+          style={styles.surface}
+        />
+        {status === "loading" && <Text style={styles.overlayMsg}>Loading…</Text>}
+        {status === "error" && (
+          <Text style={styles.overlayError}>{error ?? "failed"}</Text>
+        )}
+        {diag && status === "running" && (
+          // Long-press for the core's own report: a frame rate alone can't
+          // tell "emulating" from "spinning without executing anything".
+          <Pressable
+            onLongPress={() =>
+              Alert.alert(
+                "Core diagnostics",
+                typeof diag.core === "string"
+                  ? diag.core
+                  : "this core reports no diagnostics",
+              )
+            }
+            delayLongPress={500}
+            style={styles.fpsBadgeHit}
+          >
+            <Text style={styles.fpsBadge}>
+              {diag.fps.toFixed(1)} fps · {diag.audioShortfalls} drops
+            </Text>
+          </Pressable>
+        )}
+      </View>
+      {isDual && (
+        <View
+          style={[styles.screenAreaDual, is3ds && styles.bottom3ds]}
+          onLayout={(e) => {
+            touchLayout.current = {
+              w: e.nativeEvent.layout.width,
+              h: e.nativeEvent.layout.height,
+            };
+          }}
+          onStartShouldSetResponder={() => true}
+          onMoveShouldSetResponder={() => true}
+          onResponderGrant={(e) => touchEvent(e, true)}
+          onResponderMove={(e) => touchEvent(e, true)}
+          onResponderRelease={(e) => touchEvent(e, false)}
+          onResponderTerminate={(e) => touchEvent(e, false)}
+        >
+          <EmuSurfaceView
+            screenIndex={1}
+            filter={settings.videoFilter}
+            style={styles.surface}
+          />
+        </View>
+      )}
+      </View>
+
+      {overlay ? (
+        // box-none so the gaps between buttons stay transparent to touch
+        // and reach the bottom screen underneath.
+        <View
+          style={[styles.controlLayer, controlOpacity]}
+          pointerEvents="box-none"
+        >
+          {controls}
+        </View>
+      ) : (
+        controls
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#000" },
+  // Stacked: screens sit above the controls in normal flow.
+  screensStacked: { width: "100%" },
+  // Overlay: screens own the whole display, centred, controls float over.
+  screensOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: "center",
+  },
+  controlLayer: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: "flex-end",
+  },
   screenArea: { width: "100%", aspectRatio: 240 / 160, marginTop: 50 },
   screenAreaDual: { width: "100%", aspectRatio: 256 / 192 },
   screenAreaDualTop: { width: "100%", aspectRatio: 256 / 192, marginTop: 40 },
+  // In overlay mode the screens are centred as a group, so the top
+  // screen's push-down margin would just shift the whole stack.
+  screenAreaFlush: { marginTop: 0 },
   top3ds: { aspectRatio: 400 / 240 },
   bottom3ds: { aspectRatio: 320 / 240, width: "80%", alignSelf: "center" },
   faceRow: { flexDirection: "row", alignItems: "center", gap: 10 },

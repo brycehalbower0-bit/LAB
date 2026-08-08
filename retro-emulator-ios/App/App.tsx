@@ -11,10 +11,12 @@ import LibraryScreen from "./src/screens/LibraryScreen";
 import NullTestScreen from "./src/screens/NullTestScreen";
 import BenchmarkScreen from "./src/screens/BenchmarkScreen";
 import GameScreen from "./src/screens/GameScreen";
+import SettingsScreen from "./src/screens/SettingsScreen";
 
 type Screen =
   | { name: "library" }
   | { name: "game"; rom: { name: string; uri: string } }
+  | { name: "settings" }
   | { name: "diagnostics" }
   | { name: "nulltest" }
   | { name: "benchmark" };
@@ -28,8 +30,12 @@ export default function App() {
       {screen.name === "library" && (
         <LibraryScreen
           onOpenDiagnostics={() => setScreen({ name: "diagnostics" })}
+          onOpenSettings={() => setScreen({ name: "settings" })}
           onOpenRom={(rom) => setScreen({ name: "game", rom })}
         />
+      )}
+      {screen.name === "settings" && (
+        <SettingsScreen onBack={() => setScreen({ name: "library" })} />
       )}
       {screen.name === "game" && (
         <GameScreen
