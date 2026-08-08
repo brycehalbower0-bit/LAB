@@ -100,6 +100,12 @@ public:
     void SetSink(SinkType sink_type, std::string_view audio_device);
     /// Get the current sink
     Sink& GetSink();
+
+    // retro-emulator-ios patch: the shared ABI pulls audio
+    // (read_audio) rather than being driven by a Sink callback, so the
+    // embedder needs the same entry point a Sink would call. Unchanged
+    // semantics; only visibility moved from private.
+    void OutputCallback(s16* buffer, std::size_t num_frames);
     /// Enable/Disable audio stretching.
     void EnableStretching(bool enable);
 
@@ -109,7 +115,7 @@ protected:
 
 private:
     void FlushResidualStretcherAudio();
-    void OutputCallback(s16* buffer, std::size_t num_frames);
+
 
     Core::System& system;
 

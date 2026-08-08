@@ -150,6 +150,18 @@ int main() {
         std::printf("input: buttons/analog/touch cycled cleanly\n");
     }
 
+    // Audio must actually produce frames now that the DSP is pulled.
+    {
+        std::vector<int16_t> audio(2048 * 2);
+        uint32_t got = 0;
+        for (int i = 0; i < 10; i++) {
+            api->run_frame(core);
+            got += api->read_audio(core, audio.data(), 2048);
+        }
+        std::printf("audio frames over 10 video frames: %u\n", got);
+        CHECK(got > 0, "audio frames produced");
+    }
+
     {
         size_t size = api->state_size(core);
         std::printf("state size: %zu\n", size);

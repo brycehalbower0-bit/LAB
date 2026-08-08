@@ -12,8 +12,8 @@
 //    rejects encrypted content, mapped to EMU_ERR_ENCRYPTED_CONTENT
 //    (PLAN §2.1, ADR 0001-D5)
 //
-// Remaining scope cut: audio uses the null sink (read_audio returns 0).
-// Input (buttons, circle pad, touch) is wired through to HID.
+// Input (buttons, circle pad, touch) and audio are wired through;
+// save_data_* remains unimplemented (3DS saves are archive-based).
 
 #include <atomic>
 #include <cstdio>
@@ -25,6 +25,7 @@
 #include <string>
 #include <vector>
 
+#include "audio_core/dsp_interface.h"
 #include "audio_core/sink_details.h"
 #include "common/file_util.h"
 #include "common/logging/backend.h"
@@ -380,11 +381,16 @@ void c3ds_get_video(const EmuCore *core_c, uint32_t screen,
 }
 
 uint32_t c3ds_read_audio(EmuCore *core, int16_t *out, uint32_t max_frames) {
-    // Null sink for Phase 3a; a pull sink lands with the device slice.
-    (void)core;
-    (void)out;
-    (void)max_frames;
-    return 0;
+    if (!core->loaded || max_frames == 0) {
+        return 0;
+    }
+    // The ABI pulls audio; Citra's sinks push. OutputCallback is the
+    // entry point a Sink would call (time-stretch + mix), so we call it
+    // directly and keep SinkType::Null installed so nothing competes
+    // for the DSP output. Runs on the realtime audio thread, matching
+    // where a sink's callback would run.
+    sys().DSP().OutputCallback(out, max_frames);
+    return max_frames;
 }
 
 void c3ds_set_input(EmuCore *core, const EmuInputState *input) {
