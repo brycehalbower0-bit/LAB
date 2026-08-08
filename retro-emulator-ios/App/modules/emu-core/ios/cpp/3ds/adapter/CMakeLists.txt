@@ -4,8 +4,12 @@
 # (its CMake resolves CMAKE_SOURCE_DIR in ~37 places).
 
 add_library(c3ds_core STATIC c3ds_core.cpp)
+# Two layouts must both work: the repo (Cores/3DS/adapter, ABI at
+# Cores/Shared/include) and the vendored pod copy (cpp/3ds/adapter,
+# ABI at cpp/include). Listing both is simpler than branching.
 target_include_directories(c3ds_core
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../../Shared/include
+           ${CMAKE_CURRENT_SOURCE_DIR}/../../include
     PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries(c3ds_core PRIVATE citra_core citra_common video_core audio_core)
 # settings.h requires at least one renderer define; match the headless
