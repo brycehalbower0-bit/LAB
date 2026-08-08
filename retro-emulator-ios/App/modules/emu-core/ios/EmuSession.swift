@@ -451,6 +451,14 @@ final class EmuSession: NSObject {
   // MARK: - Diagnostics / lifecycle
 
   func diagnostics() -> [String: Any] {
+    // The core's own report is what distinguishes "emulating slowly" from
+    // "not emulating at all" -- both look like a frame rate from here.
+    var coreReport: Any = NSNull()
+    if let api, let core, let diag = api.pointee.diagnostics {
+      if let s = diag(core) {
+        coreReport = String(cString: s)
+      }
+    }
     return [
       "coreLoaded": core != nil,
       "running": running,
@@ -459,6 +467,7 @@ final class EmuSession: NSObject {
       "fps": measuredFps,
       "audioShortfalls": Int(audio.shortfallCount),
       "lastError": (lastError ?? audio.lastError) ?? NSNull(),
+      "core": coreReport,
     ]
   }
 

@@ -172,9 +172,24 @@ export default function GameScreen({
           <Text style={styles.overlayError}>{error ?? "failed"}</Text>
         )}
         {diag && status === "running" && (
-          <Text style={styles.fpsBadge}>
-            {diag.fps.toFixed(1)} fps · {diag.audioShortfalls} drops
-          </Text>
+          // Long-press for the core's own report: a frame rate alone can't
+          // tell "emulating" from "spinning without executing anything".
+          <Pressable
+            onLongPress={() =>
+              Alert.alert(
+                "Core diagnostics",
+                typeof diag.core === "string"
+                  ? diag.core
+                  : "this core reports no diagnostics",
+              )
+            }
+            delayLongPress={500}
+            style={styles.fpsBadgeHit}
+          >
+            <Text style={styles.fpsBadge}>
+              {diag.fps.toFixed(1)} fps · {diag.audioShortfalls} drops
+            </Text>
+          </Pressable>
         )}
       </View>
       {isDual && (
@@ -289,17 +304,19 @@ const styles = StyleSheet.create({
     fontSize: 13,
     paddingHorizontal: 24,
   },
-  fpsBadge: {
+  fpsBadgeHit: {
     position: "absolute",
     top: 4,
     right: 8,
-    color: "#34d399",
-    fontSize: 11,
-    fontVariant: ["tabular-nums"],
     backgroundColor: "#000000aa",
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
+  },
+  fpsBadge: {
+    color: "#34d399",
+    fontSize: 11,
+    fontVariant: ["tabular-nums"],
   },
   control: {
     backgroundColor: "#1f2937",

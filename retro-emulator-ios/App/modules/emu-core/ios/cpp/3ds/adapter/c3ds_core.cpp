@@ -31,12 +31,17 @@
 #include "common/logging/backend.h"
 #include "common/logging/filter.h"
 #include "common/settings.h"
+#include "core/arm/arm_interface.h"
 #include "core/core.h"
+#include "core/core_timing.h"
 #include "core/frontend/applets/default_applets.h"
 #include "core/frontend/emu_window.h"
 #include "core/frontend/input.h"
+#include "core/hle/kernel/kernel.h"
+#include "core/hle/kernel/process.h"
 #include "core/hle/service/service.h"
 #include "video_core/gpu.h"
+#include "video_core/pica/pica_core.h"
 #include "video_core/renderer_software/renderer_software.h"
 
 #include "core_api.h"
@@ -137,6 +142,17 @@ struct EmuCore {
     std::vector<uint32_t> video_bottom;
     EmuInputState input{};
     bool touching = false;
+    // Execution telemetry for diagnostics(). A core that loads but never
+    // executes still reports a frame rate, so the shell cannot tell the
+    // difference without these.
+    uint64_t frames_run = 0;
+    uint64_t frames_without_vblank = 0;
+    uint64_t last_loop_iters = 0;
+    int last_run_status = 0;
+    uint32_t last_pc = 0;
+    uint64_t last_ticks = 0;
+    uint64_t ticks_last_frame = 0;
+    std::string diag;
 };
 
 namespace {
@@ -329,13 +345,72 @@ void c3ds_run_frame(EmuCore *core) {
         return;
     }
     core->window->frame_done = false;
+    const uint64_t ticks_before = sys().CoreTiming().GetGlobalTicks();
+    uint64_t iters = 0;
+    int status = 0;
     // Safety cap: a wedged guest must not hang the caller (CI included).
     for (int i = 0; i < 100000 && !core->window->frame_done; i++) {
+        iters++;
         const auto result = sys().RunLoop();
         if (result != Core::System::ResultStatus::Success) {
+            status = static_cast<int>(result);
             break;
         }
     }
+    core->frames_run++;
+    core->last_loop_iters = iters;
+    core->last_run_status = status;
+    if (!core->window->frame_done) {
+        core->frames_without_vblank++;
+    }
+    const uint64_t ticks_after = sys().CoreTiming().GetGlobalTicks();
+    core->ticks_last_frame = ticks_after - ticks_before;
+    core->last_ticks = ticks_after;
+    core->last_pc = sys().GetRunningCore().GetPC();
+}
+
+// Core-internal state as text. Exists because a 3DS title that loads but
+// never executes is indistinguishable from one that runs, when all the
+// shell can see is a frame rate.
+const char *c3ds_diagnostics(EmuCore *core) {
+    char buf[1024];
+    if (!core->loaded) {
+        core->diag = "3ds: no ROM loaded";
+        return core->diag.c_str();
+    }
+
+    // A 3DS frame is ~268M cycles/sec / 60 = ~4.5M ticks. Orders of
+    // magnitude below that means the guest is idle or wedged, not slow.
+    const auto &fb = sys().GPU().PicaCore().regs.framebuffer_config[0];
+    const auto &top =
+        static_cast<SwRenderer::RendererSoftware &>(sys().GPU().Renderer())
+            .Screen(VideoCore::ScreenId::TopLeft);
+
+    std::string proc = "(none)";
+    if (auto p = sys().Kernel().GetCurrentProcess()) {
+        proc = p->codeset ? p->codeset->name : "(no codeset)";
+    }
+
+    std::snprintf(
+        buf, sizeof(buf),
+        "3ds core\n"
+        "frames=%llu novblank=%llu iters/frame=%llu status=%d\n"
+        "ticks/frame=%llu (60fps guest ~= 4.5M)\n"
+        "pc=0x%08X cores=%u process=%s\n"
+        "fb0: addr=0x%08X fmt=%d stride=%u %ux%u active=%u\n"
+        "screen0: %ux%u pixels=%zu",
+        (unsigned long long)core->frames_run,
+        (unsigned long long)core->frames_without_vblank,
+        (unsigned long long)core->last_loop_iters, core->last_run_status,
+        (unsigned long long)core->ticks_last_frame, core->last_pc,
+        sys().GetNumCores(), proc.c_str(),
+        (unsigned)(fb.active_fb == 0 ? fb.address_left1 : fb.address_left2),
+        (int)fb.color_format.Value(), (unsigned)fb.stride,
+        (unsigned)fb.width.Value(), (unsigned)fb.height.Value(),
+        (unsigned)fb.active_fb,
+        (unsigned)top.width, (unsigned)top.height, top.pixels.size());
+    core->diag = buf;
+    return core->diag.c_str();
 }
 
 void c3ds_get_video(const EmuCore *core_c, uint32_t screen,
@@ -357,14 +432,17 @@ void c3ds_get_video(const EmuCore *core_c, uint32_t screen,
     dst.assign((size_t)w * h, 0xFF000000u);
 
     if (!info.pixels.empty()) {
-        // ScreenInfo is column-major portrait RGBA; landscape (x, y)
-        // reads portrait (row = x, col = y): src = (x * info.height + y).
-        // (Upstream blitter: native landscape w = info.height.)
+        // LoadFBToScreenInfo writes RGBA8 at (fb_x * info.height + fb_y),
+        // fb_x < info.width, fb_y < info.height. Read linearly, fb_y varies
+        // fastest over info.height, so the buffer is already landscape rows
+        // of info.height pixels, info.width rows tall. Landscape (x, y)
+        // therefore reads (y * info.height + x) -- NOT (x * ... + y), which
+        // transposed the image and ran off the end of the buffer.
         const uint32_t native_w = info.height; // landscape width
         const uint32_t native_h = info.width;  // landscape height
         for (uint32_t y = 0; y < h && y < native_h; y++) {
             for (uint32_t x = 0; x < w && x < native_w; x++) {
-                const size_t src_off = ((size_t)x * info.height + y) * 4;
+                const size_t src_off = ((size_t)y * native_w + x) * 4;
                 if (src_off + 3 < info.pixels.size()) {
                     uint32_t px;
                     std::memcpy(&px, info.pixels.data() + src_off, 4);
@@ -497,6 +575,7 @@ const EmuCoreApi g_c3ds_api = {
     c3ds_save_data_read,
     c3ds_save_data_write,
     c3ds_load_rom_path,
+    c3ds_diagnostics,
 };
 
 } // namespace

@@ -23,6 +23,8 @@ export interface Diagnostics {
   fps: number;
   audioShortfalls: number;
   lastError: string | null;
+  /** Core-internal state as text; null for cores that don't report it. */
+  core: string | null;
 }
 
 interface EmuCoreModule {

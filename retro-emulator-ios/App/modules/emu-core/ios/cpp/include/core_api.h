@@ -176,6 +176,16 @@ typedef struct EmuCoreApi {
      * 4 GB). The shell prefers this over load_rom when non-NULL.
      */
     EmuStatus (*load_rom_path)(EmuCore *core, const char *path);
+
+    /*
+     * OPTIONAL (may be NULL). Human-readable core-internal state, for
+     * on-device triage: without it, "core silently not executing" and
+     * "core running fine" look identical from the shell -- both just
+     * report a frame rate. Returns a NUL-terminated string owned by the
+     * core, valid until the next call. Not thread-safe; call from the
+     * emulation thread or while stopped.
+     */
+    const char *(*diagnostics)(EmuCore *core);
 } EmuCoreApi;
 
 #ifdef __cplusplus
