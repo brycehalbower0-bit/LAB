@@ -1,0 +1,7 @@
+# Vendored trees must not lose files to ancestor ignore rules (root
+# dist/ and build/ patterns). Negations re-include the dirs, then
+# their contents (order matters for git).
+!3ds/azahar/dist/
+!3ds/azahar/dist/**
+!**/build/
+!**/build/**

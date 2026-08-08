@@ -38,3 +38,8 @@ set(ENABLE_SHADER_JIT OFF CACHE BOOL "" FORCE)
 # the gdb throw-catchpoint in CI (costs nothing at this stage).
 set(CMAKE_CXX_FLAGS_RELEASE "-O2 -g -fno-omit-frame-pointer" CACHE STRING "" FORCE)
 set(CMAKE_C_FLAGS_RELEASE "-O2 -g -fno-omit-frame-pointer" CACHE STRING "" FORCE)
+
+# EAS build machines ship CMake 4.x, which dropped compatibility with
+# cmake_minimum_required(<3.5) — several vendored externals still
+# declare old minimums. This lets them configure unchanged.
+set(CMAKE_POLICY_VERSION_MINIMUM 3.5 CACHE STRING "" FORCE)
