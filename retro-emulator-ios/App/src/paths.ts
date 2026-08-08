@@ -7,6 +7,7 @@
 
 import { Directory, Paths } from "expo-file-system";
 
+export const documentsRoot = new Directory(Paths.document);
 export const romsDir = new Directory(Paths.document, "roms");
 export const savesDir = new Directory(Paths.document, "saves");
 export const statesDir = new Directory(Paths.document, "states");

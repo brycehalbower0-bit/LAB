@@ -15,7 +15,7 @@ import {
   Text,
   View,
 } from "react-native";
-import { ensureDirs, romsDir } from "../paths";
+import { documentsRoot, ensureDirs, romsDir } from "../paths";
 
 const ROM_RE = /\.(gba|nds|3ds|cci|cxi|3dsx|app|elf)$/i;
 
@@ -35,6 +35,22 @@ export default function LibraryScreen({
 
   const refresh = useCallback(() => {
     ensureDirs();
+    // Files dropped in via Finder/the Files app land in Documents/
+    // (UIFileSharingEnabled). Adopt them into roms/ — this is the only
+    // practical route for multi-GB 3DS dumps, since it involves no
+    // picker, no cache copy, and no in-memory unzip.
+    try {
+      for (const entry of documentsRoot.list()) {
+        if (entry instanceof File && ROM_RE.test(entry.name)) {
+          const dest = new File(romsDir, entry.name);
+          if (!dest.exists) {
+            entry.move(dest);
+          }
+        }
+      }
+    } catch {
+      // Non-fatal: the picker path still works.
+    }
     const entries = romsDir
       .list()
       .filter((e): e is File => e instanceof File)
