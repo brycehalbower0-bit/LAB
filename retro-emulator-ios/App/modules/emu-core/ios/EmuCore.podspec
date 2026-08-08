@@ -68,7 +68,7 @@ Pod::Spec.new do |s|
   # OTHER_LDFLAGS links them. Order matters (dependents first).
   s.script_phase = {
     :name => 'Build 3DS core (Azahar, no-JIT)',
-    :script => '"${PODS_TARGET_SRCROOT}/build-3ds.sh" '                '"${PODS_TARGET_SRCROOT}/cpp/3ds/azahar" '                '"${DERIVED_FILE_DIR}/azahar-build" '                '"${PODS_TARGET_SRCROOT}/cpp/3ds/lib"',
+    :script => 'bash "${PODS_TARGET_SRCROOT}/build-3ds.sh" '                '"${PODS_TARGET_SRCROOT}/cpp/3ds/azahar" '                '"${DERIVED_FILE_DIR}/azahar-build" '                '"${PODS_TARGET_SRCROOT}/cpp/3ds/lib"',
     :execution_position => :before_compile,
     :output_files => ['${PODS_TARGET_SRCROOT}/cpp/3ds/lib/libc3ds_core.a']
   }
