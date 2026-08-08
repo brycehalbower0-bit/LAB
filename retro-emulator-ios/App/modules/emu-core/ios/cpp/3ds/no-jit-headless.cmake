@@ -36,8 +36,13 @@ set(ENABLE_LTO OFF CACHE BOOL "" FORCE)
 set(ENABLE_SHADER_JIT OFF CACHE BOOL "" FORCE)
 # Frame pointers + debug info: bring-up needs readable backtraces from
 # the gdb throw-catchpoint in CI (costs nothing at this stage).
-set(CMAKE_CXX_FLAGS_RELEASE "-O2 -g -fno-omit-frame-pointer" CACHE STRING "" FORCE)
-set(CMAKE_C_FLAGS_RELEASE "-O2 -g -fno-omit-frame-pointer" CACHE STRING "" FORCE)
+# MICROPROFILE_ENABLED=0: upstream compiles MicroProfile timers in by
+# default, including per-triangle in the rasterizer and per-block in
+# dyncom -- instrumentation for a viewer nothing here ever opens. The
+# define is here (not just the iOS cache) so CI compile-gates both the
+# disabled path and the device configuration.
+set(CMAKE_CXX_FLAGS_RELEASE "-O2 -g -fno-omit-frame-pointer -DMICROPROFILE_ENABLED=0" CACHE STRING "" FORCE)
+set(CMAKE_C_FLAGS_RELEASE "-O2 -g -fno-omit-frame-pointer -DMICROPROFILE_ENABLED=0" CACHE STRING "" FORCE)
 
 # EAS build machines ship CMake 4.x, which dropped compatibility with
 # cmake_minimum_required(<3.5) — several vendored externals still

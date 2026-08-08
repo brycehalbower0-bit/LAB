@@ -16,7 +16,9 @@ set -euo pipefail
 SRC="${1:?source dir}"
 BUILD="${2:?build dir}"
 OUT="${3:?output dir}"
-CACHE="$(cd "$(dirname "$0")" && pwd)/cpp/3ds/no-jit-headless.cmake"
+# no-jit-ios.cmake = the CI cache plus -O3 and thin LTO (see the file
+# for why CI and device diverge).
+CACHE="$(cd "$(dirname "$0")" && pwd)/cpp/3ds/no-jit-ios.cmake"
 
 GENERATOR=""
 command -v ninja >/dev/null && GENERATOR="Ninja"

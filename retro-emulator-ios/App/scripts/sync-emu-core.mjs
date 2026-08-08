@@ -241,6 +241,8 @@ rmSync(adapterDest, { recursive: true, force: true });
 cpSync(adapterSrc, adapterDest, { recursive: true, filter: skipSymlinks });
 cpSync(join(repoRoot, "Cores", "3DS", "no-jit-headless.cmake"),
        join(destRoot, "3ds", "no-jit-headless.cmake"));
+cpSync(join(repoRoot, "Cores", "3DS", "no-jit-ios.cmake"),
+       join(destRoot, "3ds", "no-jit-ios.cmake"));
 console.log("synced Cores/3DS (azahar + adapter + cache file) -> 3ds/");
 
 // version.c is CMake-generated upstream; generate it here from the
