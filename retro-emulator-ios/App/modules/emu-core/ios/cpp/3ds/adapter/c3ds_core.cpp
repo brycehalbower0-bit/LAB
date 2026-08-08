@@ -12,10 +12,10 @@
 //    rejects encrypted content, mapped to EMU_ERR_ENCRYPTED_CONTENT
 //    (PLAN §2.1, ADR 0001-D5)
 //
-// Known Phase-3a scope cuts, wired in later slices: audio uses the null
-// sink (read_audio returns 0), set_input stores state but isn't yet fed
-// into HID.
+// Remaining scope cut: audio uses the null sink (read_audio returns 0).
+// Input (buttons, circle pad, touch) is wired through to HID.
 
+#include <atomic>
 #include <cstdio>
 #include <exception>
 #include <typeinfo>
@@ -33,6 +33,7 @@
 #include "core/core.h"
 #include "core/frontend/applets/default_applets.h"
 #include "core/frontend/emu_window.h"
+#include "core/frontend/input.h"
 #include "core/hle/service/service.h"
 #include "video_core/gpu.h"
 #include "video_core/renderer_software/renderer_software.h"
@@ -60,6 +61,69 @@ public:
     bool frame_done = false;
 };
 
+
+} // namespace
+
+// Live input state, written by set_input and read by the Input devices
+// HID polls. Atomic because the shell writes from its own thread.
+namespace c3ds_input {
+std::atomic<uint32_t> buttons{0};
+std::atomic<int32_t> analog_x{0};
+std::atomic<int32_t> analog_y{0};
+} // namespace c3ds_input
+
+namespace {
+
+// EMU_BTN_* bit for each 3DS NativeButton index, in enum order:
+// A B X Y Up Down Left Right L R Start Select Debug GPIO14 ZL ZR
+constexpr uint32_t kNativeButtonBits[] = {
+    EMU_BTN_A,     EMU_BTN_B,    EMU_BTN_X,     EMU_BTN_Y,
+    EMU_BTN_UP,    EMU_BTN_DOWN, EMU_BTN_LEFT,  EMU_BTN_RIGHT,
+    EMU_BTN_L,     EMU_BTN_R,    EMU_BTN_START, EMU_BTN_SELECT,
+    0,             0,            EMU_BTN_ZL,    EMU_BTN_ZR,
+};
+
+class AbiButton final : public Input::ButtonDevice {
+public:
+    explicit AbiButton(uint32_t bit) : bit_(bit) {}
+    bool GetStatus() const override {
+        return bit_ != 0 && (c3ds_input::buttons.load(std::memory_order_relaxed) & bit_) != 0;
+    }
+
+private:
+    uint32_t bit_;
+};
+
+class AbiButtonFactory final : public Input::Factory<Input::ButtonDevice> {
+public:
+    std::unique_ptr<Input::ButtonDevice> Create(
+        const Common::ParamPackage& params) override {
+        const int index = params.Get("button", -1);
+        const uint32_t bit =
+            (index >= 0 && index < (int)(sizeof(kNativeButtonBits) / sizeof(uint32_t)))
+                ? kNativeButtonBits[index]
+                : 0u;
+        return std::make_unique<AbiButton>(bit);
+    }
+};
+
+// The circle pad. ABI carries -32768..32767; Citra wants -1..1.
+class AbiAnalog final : public Input::AnalogDevice {
+public:
+    std::tuple<float, float> GetStatus() const override {
+        return {c3ds_input::analog_x.load(std::memory_order_relaxed) / 32767.0f,
+                c3ds_input::analog_y.load(std::memory_order_relaxed) / 32767.0f};
+    }
+};
+
+class AbiAnalogFactory final : public Input::Factory<Input::AnalogDevice> {
+public:
+    std::unique_ptr<Input::AnalogDevice> Create(
+        const Common::ParamPackage&) override {
+        return std::make_unique<AbiAnalog>();
+    }
+};
+
 } // namespace
 
 struct EmuCore {
@@ -71,6 +135,7 @@ struct EmuCore {
     std::vector<uint32_t> video_top;
     std::vector<uint32_t> video_bottom;
     EmuInputState input{};
+    bool touching = false;
 };
 
 namespace {
@@ -192,6 +257,25 @@ EmuStatus c3ds_load_rom_path(EmuCore *core, const char *path) {
         Settings::values.lle_modules.emplace(service_module.name, false);
     }
 
+    // Register our ABI-backed input devices and point the profile at
+    // them, so HID polls EmuInputState (mirrors what every frontend
+    // does with its own engine name).
+    static bool input_ready = false;
+    if (!input_ready) {
+        Input::RegisterFactory<Input::ButtonDevice>(
+            "emuabi", std::make_shared<AbiButtonFactory>());
+        Input::RegisterFactory<Input::AnalogDevice>(
+            "emuabi", std::make_shared<AbiAnalogFactory>());
+        input_ready = true;
+    }
+    for (int i = 0; i < Settings::NativeButton::NumButtons; i++) {
+        Settings::values.current_input_profile.buttons[i] =
+            "engine:emuabi,button:" + std::to_string(i);
+    }
+    // analogs[0] is the circle pad; analogs[1] (C-stick) stays unmapped.
+    Settings::values.current_input_profile.analogs[0] = "engine:emuabi";
+    Settings::values.current_input_profile.analogs[1] = "";
+
     core->window = std::make_unique<HeadlessWindow>();
     Frontend::RegisterDefaultApplets(sys());
 
@@ -304,7 +388,32 @@ uint32_t c3ds_read_audio(EmuCore *core, int16_t *out, uint32_t max_frames) {
 }
 
 void c3ds_set_input(EmuCore *core, const EmuInputState *input) {
-    core->input = *input; // stored; HID wiring is a later slice
+    core->input = *input;
+    c3ds_input::buttons.store(input->buttons, std::memory_order_relaxed);
+    c3ds_input::analog_x.store(input->analog_x, std::memory_order_relaxed);
+    c3ds_input::analog_y.store(input->analog_y, std::memory_order_relaxed);
+
+    // Touch goes through the window, in framebuffer coordinates: the
+    // layout stacks top (400x240) over bottom (320x240), and the bottom
+    // screen is centered in the 400-wide frame.
+    if (!core->window) {
+        return;
+    }
+    if (input->touch_down) {
+        const unsigned x = (kTopW - kBotW) / 2 +
+                           (input->touch_x < kBotW ? input->touch_x : kBotW - 1);
+        const unsigned y = kTopH +
+                           (input->touch_y < kBotH ? input->touch_y : kBotH - 1);
+        if (core->touching) {
+            core->window->TouchMoved(x, y);
+        } else {
+            core->window->TouchPressed(x, y);
+            core->touching = true;
+        }
+    } else if (core->touching) {
+        core->window->TouchReleased();
+        core->touching = false;
+    }
 }
 
 size_t c3ds_state_size(const EmuCore *core) {

@@ -118,12 +118,37 @@ int main() {
     CHECK(bottom.pixels != nullptr && bottom.width == 320,
           "bottom video buffer");
 
+    // Input must reach the guest, not just be stored: HID reads our
+    // Input devices, so PAD_STATE in shared memory should show the
+    // press. Reading HID directly would need core internals, so assert
+    // the observable contract instead: set/clear across frames without
+    // crashing, plus touch press/move/release ordering.
     {
         EmuInputState input{};
-        input.buttons = EMU_BTN_A;
+        input.buttons = EMU_BTN_A | EMU_BTN_START;
         input.analog_x = 12000;
+        input.analog_y = -8000;
         api->set_input(core, &input);
         api->run_frame(core);
+
+        input.touch_down = 1;
+        input.touch_x = 160;
+        input.touch_y = 120;
+        api->set_input(core, &input);
+        api->run_frame(core);
+        // Move while held, then release.
+        input.touch_x = 200;
+        api->set_input(core, &input);
+        api->run_frame(core);
+        input.touch_down = 0;
+        api->set_input(core, &input);
+        api->run_frame(core);
+
+        input = EmuInputState{};
+        api->set_input(core, &input);
+        api->run_frame(core);
+        std::printf("input: buttons/analog/touch cycled cleanly
+");
     }
 
     {
