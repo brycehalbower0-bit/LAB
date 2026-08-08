@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "core_api.h"
+#include "fb_map.h"
 
 extern "C" const EmuCoreApi *emu_3ds_api(void);
 
@@ -183,6 +184,38 @@ int main() {
     }
 
     api->destroy(core);
+
+    // Framebuffer mapping. Checked exhaustively against upstream's write
+    // formula rather than against the rendered image, because a synthetic
+    // ELF draws nothing -- which is precisely how a transposed read
+    // reached a device once already.
+    {
+        // Portrait ScreenInfo dims for the two 3DS screens: the LCDs are
+        // mounted rotated, so info.width is the short axis.
+        const uint32_t dims[2][2] = {{240, 400}, {240, 320}};
+        for (const auto &d : dims) {
+            const uint32_t iw = d[0], ih = d[1];
+            const uint32_t lw = c3ds_fb_width(iw, ih);
+            const uint32_t lh = c3ds_fb_height(iw, ih);
+            CHECK(lw == ih && lh == iw, "landscape dims are the transpose");
+
+            bool agrees = true, in_bounds = true;
+            for (uint32_t y = 0; y < lh; y++) {
+                for (uint32_t x = 0; x < lw; x++) {
+                    const size_t got = c3ds_fb_index(x, y, iw, ih);
+                    // Landscape (x, y) is framebuffer (fb_x = y, fb_y = x).
+                    if (got != c3ds_fb_upstream_index(y, x, iw, ih)) {
+                        agrees = false;
+                    }
+                    if (got >= (size_t)iw * ih) {
+                        in_bounds = false;
+                    }
+                }
+            }
+            CHECK(agrees, "fb index matches upstream write offset");
+            CHECK(in_bounds, "fb index never leaves the screen buffer");
+        }
+    }
 
     if (g_failures == 0) {
         std::printf("3ds core contract: all checks passed\n");

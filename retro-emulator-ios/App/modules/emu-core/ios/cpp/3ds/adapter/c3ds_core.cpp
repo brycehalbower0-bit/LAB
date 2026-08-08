@@ -27,6 +27,7 @@
 
 #include "audio_core/dsp_interface.h"
 #include "audio_core/sink_details.h"
+#include "common/common_paths.h"
 #include "common/file_util.h"
 #include "common/logging/backend.h"
 #include "common/logging/filter.h"
@@ -45,6 +46,7 @@
 #include "video_core/renderer_software/renderer_software.h"
 
 #include "core_api.h"
+#include "fb_map.h"
 
 namespace {
 
@@ -153,6 +155,7 @@ struct EmuCore {
     uint64_t last_ticks = 0;
     uint64_t ticks_last_frame = 0;
     std::string diag;
+    std::string log_path;
 };
 
 namespace {
@@ -256,12 +259,19 @@ EmuStatus c3ds_load_rom_path(EmuCore *core, const char *path) {
     }
 
     // Citra's own logs are the cheapest map of how far Load gets when
-    // something throws.
+    // something throws. diagnostics() reads the tail of this file back,
+    // which is the only way to see the core's account of a failed boot
+    // on a device with no attached console.
+    core->log_path =
+        FileUtil::GetUserPath(FileUtil::UserPath::LogDir) + LOG_FILE;
     static bool logging_ready = false;
     if (!logging_ready) {
         Common::Log::Initialize();
         Common::Log::Start();
-        Common::Log::SetGlobalFilter(Common::Log::Filter(Common::Log::Level::Debug));
+        // Warning and above: Debug floods the file (and only Error-level
+        // entries force a flush, so the spam mostly costs us the tail).
+        Common::Log::SetGlobalFilter(
+            Common::Log::Filter(Common::Log::Level::Warning));
         logging_ready = true;
     }
 
@@ -369,13 +379,52 @@ void c3ds_run_frame(EmuCore *core) {
     core->last_pc = sys().GetRunningCore().GetPC();
 }
 
+// Last `want` lines of a file. The log backend only force-flushes at
+// Error level, so this shows everything up to the most recent error --
+// which is exactly the part worth seeing.
+std::string tail_lines(const std::string &path, size_t want) {
+    if (path.empty()) {
+        return {};
+    }
+    std::FILE *f = std::fopen(path.c_str(), "rb");
+    if (!f) {
+        return {};
+    }
+    std::fseek(f, 0, SEEK_END);
+    const long size = std::ftell(f);
+    const long window = size < 65536 ? size : 65536;
+    std::fseek(f, size - window, SEEK_SET);
+    std::string buf((size_t)window, '\0');
+    const size_t got = std::fread(buf.data(), 1, (size_t)window, f);
+    std::fclose(f);
+    buf.resize(got);
+
+    size_t cut = buf.size();
+    for (size_t n = 0; n < want && cut > 0; n++) {
+        const size_t nl = buf.rfind('\n', cut - 1);
+        if (nl == std::string::npos) {
+            cut = 0;
+            break;
+        }
+        cut = nl;
+    }
+    return buf.substr(cut == 0 ? 0 : cut + 1);
+}
+
 // Core-internal state as text. Exists because a 3DS title that loads but
 // never executes is indistinguishable from one that runs, when all the
 // shell can see is a frame rate.
 const char *c3ds_diagnostics(EmuCore *core) {
     char buf[1024];
     if (!core->loaded) {
+        // A failed Load is exactly when the log matters most, so fall
+        // through to it rather than returning bare "not loaded".
         core->diag = "3ds: no ROM loaded";
+        const std::string tail = tail_lines(core->log_path, 14);
+        if (!tail.empty()) {
+            core->diag += "\n--- azahar log ---\n";
+            core->diag += tail;
+        }
         return core->diag.c_str();
     }
 
@@ -410,6 +459,12 @@ const char *c3ds_diagnostics(EmuCore *core) {
         (unsigned)fb.active_fb,
         (unsigned)top.width, (unsigned)top.height, top.pixels.size());
     core->diag = buf;
+
+    const std::string tail = tail_lines(core->log_path, 14);
+    if (!tail.empty()) {
+        core->diag += "\n--- azahar log ---\n";
+        core->diag += tail;
+    }
     return core->diag.c_str();
 }
 
@@ -432,17 +487,14 @@ void c3ds_get_video(const EmuCore *core_c, uint32_t screen,
     dst.assign((size_t)w * h, 0xFF000000u);
 
     if (!info.pixels.empty()) {
-        // LoadFBToScreenInfo writes RGBA8 at (fb_x * info.height + fb_y),
-        // fb_x < info.width, fb_y < info.height. Read linearly, fb_y varies
-        // fastest over info.height, so the buffer is already landscape rows
-        // of info.height pixels, info.width rows tall. Landscape (x, y)
-        // therefore reads (y * info.height + x) -- NOT (x * ... + y), which
-        // transposed the image and ran off the end of the buffer.
-        const uint32_t native_w = info.height; // landscape width
-        const uint32_t native_h = info.width;  // landscape height
+        // See fb_map.h -- the mapping is factored out because getting it
+        // wrong is invisible to the contract test.
+        const uint32_t native_w = c3ds_fb_width(info.width, info.height);
+        const uint32_t native_h = c3ds_fb_height(info.width, info.height);
         for (uint32_t y = 0; y < h && y < native_h; y++) {
             for (uint32_t x = 0; x < w && x < native_w; x++) {
-                const size_t src_off = ((size_t)y * native_w + x) * 4;
+                const size_t src_off =
+                    c3ds_fb_index(x, y, info.width, info.height) * 4;
                 if (src_off + 3 < info.pixels.size()) {
                     uint32_t px;
                     std::memcpy(&px, info.pixels.data() + src_off, 4);
