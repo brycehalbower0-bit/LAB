@@ -1,0 +1,1 @@
+C:/Users/TheMi/Desktop/Project/LAB/retro-emulator-ios/Cores/3DS/azahar/externals/libusb/libusb/README
