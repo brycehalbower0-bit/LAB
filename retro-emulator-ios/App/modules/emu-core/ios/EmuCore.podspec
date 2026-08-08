@@ -63,7 +63,7 @@ Pod::Spec.new do |s|
   # compilation and left emu_3ds_api undefined at app link time.
   s.user_target_xcconfig = {
     'LIBRARY_SEARCH_PATHS' => '$(inherited) "$(PODS_ROOT)/../../modules/emu-core/ios/cpp/3ds/lib"',
-    'OTHER_LDFLAGS' => '$(inherited) -force_load "$(PODS_ROOT)/../../modules/emu-core/ios/cpp/3ds/lib/libc3ds_core.a" '       '-lcitra_core -lcitra_common -lvideo_core -laudio_core -lnetwork '       '-lteakra -lcryptopp -lfmt -lSoundTouch -llodepng '       '-lboost_serialization -lboost_iostreams'
+    'OTHER_LDFLAGS' => '$(inherited) -force_load "$(PODS_ROOT)/../../modules/emu-core/ios/cpp/3ds/lib/libc3ds_core.a" '       '-lazahar_deps'
   }
 
   # --- 3DS core (Azahar) ---

@@ -48,5 +48,17 @@ cmake --build "$BUILD" --target c3ds_core --parallel
 # build (see ADR 0006); a missing one shows up as an undefined symbol
 # at app link, not silently.
 mkdir -p "$OUT"
+rm -f "$OUT"/*.a
 find "$BUILD" -name "*.a" -exec cp {} "$OUT/" \;
-echo "3ds: staged $(ls "$OUT" | wc -l | tr -d ' ') static libs in $OUT"
+
+# Combine every dependency into ONE archive so the app's link line
+# doesn't have to enumerate library names. Enumerating them by hand
+# already missed the C libraries (zstd, faad2) once; the set also
+# changes with build flags. c3ds_core stays separate because it needs
+# -force_load (nothing references emu_3ds_api until Swift asks).
+cd "$OUT"
+mv libc3ds_core.a c3ds_core.keep
+libtool -static -o libazahar_deps.a *.a 2>/dev/null
+rm -f $(ls *.a | grep -v '^libazahar_deps.a$')
+mv c3ds_core.keep libc3ds_core.a
+echo "3ds: staged libc3ds_core.a + libazahar_deps.a ($(du -h libazahar_deps.a | cut -f1))"
