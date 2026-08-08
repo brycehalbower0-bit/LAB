@@ -217,6 +217,25 @@ writeFileSync(
 );
 console.log("synced Cores/NDS/melonds (manifest-pruned, version.h) -> nds/melonds");
 
+// --- Azahar (3DS core) — vendored whole, not manifest-pruned.
+// Unlike mGBA/melonDS this tree is built by its own CMake (1369
+// sources, per-target defines, generated files), invoked from the
+// podspec's script phase — so the pod needs the sources AND the build
+// system, not a curated file list. Big (~110MB); see
+// docs/playable-3ds-plan.md for why route 1 was chosen.
+const azaharSrc = join(repoRoot, "Cores", "3DS", "azahar");
+const azaharDest = join(destRoot, "3ds", "azahar");
+rmSync(azaharDest, { recursive: true, force: true });
+cpSync(azaharSrc, azaharDest, { recursive: true });
+// The adapter lives beside it (azahar's CMake includes ../adapter).
+const adapterSrc = join(repoRoot, "Cores", "3DS", "adapter");
+const adapterDest = join(destRoot, "3ds", "adapter");
+rmSync(adapterDest, { recursive: true, force: true });
+cpSync(adapterSrc, adapterDest, { recursive: true });
+cpSync(join(repoRoot, "Cores", "3DS", "no-jit-headless.cmake"),
+       join(destRoot, "3ds", "no-jit-headless.cmake"));
+console.log("synced Cores/3DS (azahar + adapter + cache file) -> 3ds/");
+
 // version.c is CMake-generated upstream; generate it here from the
 // pinned tag (Cores/GBA/README.md).
 const versionTemplate = readFileSync(

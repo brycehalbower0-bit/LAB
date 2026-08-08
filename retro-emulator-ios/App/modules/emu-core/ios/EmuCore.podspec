@@ -35,7 +35,9 @@ Pod::Spec.new do |s|
     # The trailing -std wins over the project-wide c++20 Expo forces:
     # melonDS targets C++17 (path::u8string() returns char8_t strings
     # under c++20, breaking FATStorage).
-    'OTHER_CPLUSPLUSFLAGS' => '$(inherited) $(OTHER_CFLAGS) -std=gnu++17'
+    'OTHER_CPLUSPLUSFLAGS' => '$(inherited) $(OTHER_CFLAGS) -std=gnu++17',
+    'LIBRARY_SEARCH_PATHS' => '$(inherited) "$(PODS_TARGET_SRCROOT)/cpp/3ds/lib"',
+    'OTHER_LDFLAGS' => '$(inherited) -force_load "$(PODS_TARGET_SRCROOT)/cpp/3ds/lib/libc3ds_core.a" '       '-lcitra_core -lcitra_common -lvideo_core -laudio_core -lnetwork '       '-lteakra -lcryptopp -lfmt -lSoundTouch -llodepng '       '-lboost_serialization -lboost_iostreams'
   }
 
   # mGBA HEADERS deliberately stay out of source_files: CocoaPods maps
@@ -57,4 +59,18 @@ Pod::Spec.new do |s|
   # Swift sees only the pure-C ABI: the bridge header plus core_api.h
   # itself (already C-clean by design — see core_api.h's header comment).
   s.public_header_files = ['EmuCoreBridge.h', 'cpp/include/core_api.h']
+
+  # --- 3DS core (Azahar) ---
+  # Built by its own CMake rather than the source glob above: 1369
+  # sources across targets with different define sets, plus generated
+  # files (scm_rev.cpp, version.h). See docs/playable-3ds-plan.md.
+  # The script phase runs before compilation and stages static libs;
+  # OTHER_LDFLAGS links them. Order matters (dependents first).
+  s.script_phase = {
+    :name => 'Build 3DS core (Azahar, no-JIT)',
+    :script => '"${PODS_TARGET_SRCROOT}/build-3ds.sh" '                '"${PODS_TARGET_SRCROOT}/cpp/3ds/azahar" '                '"${DERIVED_FILE_DIR}/azahar-build" '                '"${PODS_TARGET_SRCROOT}/cpp/3ds/lib"',
+    :execution_position => :before_compile,
+    :output_files => ['${PODS_TARGET_SRCROOT}/cpp/3ds/lib/libc3ds_core.a']
+  }
+
 end
