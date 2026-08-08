@@ -66,6 +66,10 @@ public class EmuCoreModule: Module {
       try EmuSession.shared.flushSave()
     }
 
+    Function("setOption") { (key: String, value: Int) -> Bool in
+      EmuSession.shared.setOption(key, value)
+    }
+
     AsyncFunction("getDiagnostics") { () -> [String: Any] in
       EmuSession.shared.diagnostics()
     }

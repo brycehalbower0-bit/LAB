@@ -4,6 +4,7 @@
 // values worth setting here are coarse.
 
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { EmuCore } from "../emu";
 import { useSettings, type VideoFilter } from "../settings";
 
 const OPACITY_STEPS = [0.15, 0.3, 0.45, 0.55, 0.7, 0.85, 1];
@@ -49,6 +50,25 @@ export default function SettingsScreen({ onBack }: { onBack: () => void }) {
               : "sharp") as VideoFilter,
           })
         }
+      />
+
+      <Text style={styles.section}>Performance (3DS)</Text>
+
+      <Row
+        label="CPU speed"
+        value={`${settings.cpuClock}%`}
+        hint={
+          settings.cpuClock === 100
+            ? "Accurate. Lower values buy frame rate by giving the interpreter less to emulate."
+            : "Faster, less accurate. Games that depend on CPU timing can stutter or misbehave — turn this back to 100% before trusting anything odd you see."
+        }
+        onPress={() => {
+          const steps = [100, 90, 80, 70, 60, 50];
+          const i = steps.indexOf(settings.cpuClock);
+          const next = steps[(i + 1) % steps.length] ?? 100;
+          update({ cpuClock: next });
+          EmuCore.setOption("cpu_clock", next);
+        }}
       />
 
       <Text style={styles.section}>Controls</Text>

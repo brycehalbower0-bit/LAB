@@ -323,6 +323,23 @@ EmuStatus c3ds_load_rom_path(EmuCore *core, const char *path) {
     Settings::values.graphics_api = Settings::GraphicsAPI::Software;
     Settings::values.output_type = AudioCore::SinkType::Null;
 
+    // Speed settings. None of these change what a game does; they remove
+    // work we never consume.
+    //
+    // No stereoscopy: nothing reads the right-eye screen, and rendering
+    // it is a second full decode of the same framebuffer.
+    Settings::values.factor_3d = 0;
+    Settings::values.disable_right_eye_render = true;
+    Settings::values.resolution_factor = 1; // native; no supersampling
+    // The shell paces against wall clock (ADR 0003), so the core's own
+    // limiter is pure overhead -- and at 30% of full speed it would
+    // never engage anyway.
+    Settings::values.frame_limit = 0;
+    // Time-stretching resamples to hide speed variation. We are far from
+    // full speed, so it would run constantly, and it costs real CPU on
+    // the audio thread for a title that is already behind.
+    Settings::values.enable_audio_stretching = false;
+
     // Citra's user-path table is empty until a frontend sets it; any
     // .at() on it throws (upstream frontends all call this at init).
     // The shell passes a writable sandbox dir in the device slice; for
@@ -420,6 +437,24 @@ EmuStatus c3ds_load_rom(EmuCore *core, const uint8_t *data, size_t size) {
     }
     core->temp_rom_path = tmp.string();
     return c3ds_load_rom_path(core, core->temp_rom_path.c_str());
+}
+
+// Integer tuning knobs by name (see core_api.h). Applying settings live
+// is safe here: Azahar reads cpu_clock_percentage when it reschedules,
+// so the change takes effect on the next timeslice.
+EmuStatus c3ds_set_option(EmuCore *core, const char *key, int32_t value) {
+    (void)core;
+    if (!key) {
+        return EMU_ERR_INVALID_ARG;
+    }
+    if (std::strcmp(key, "cpu_clock") == 0) {
+        if (value < 5 || value > 400) {
+            return EMU_ERR_INVALID_ARG;
+        }
+        Settings::values.cpu_clock_percentage = value;
+        return EMU_OK;
+    }
+    return EMU_ERR_UNSUPPORTED;
 }
 
 void c3ds_reset(EmuCore *core) {
@@ -828,6 +863,7 @@ const EmuCoreApi g_c3ds_api = {
     c3ds_save_data_write,
     c3ds_load_rom_path,
     c3ds_diagnostics,
+    c3ds_set_option,
 };
 
 } // namespace

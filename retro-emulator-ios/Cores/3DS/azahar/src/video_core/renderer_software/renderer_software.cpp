@@ -5,6 +5,7 @@
 #include <atomic>
 #include <chrono>
 #include "common/color.h"
+#include "common/settings.h"
 #include "core/core.h"
 #include "video_core/gpu.h"
 #include "video_core/pica/pica_core.h"
@@ -39,7 +40,16 @@ void RendererSoftware::SwapBuffers() {
 
 void RendererSoftware::PrepareRenderTarget() {
     const auto& regs_lcd = pica.regs_lcd;
+    // Screen 1 is the top-right eye. With stereoscopy off it decodes the
+    // same framebuffer as screen 0 (fb_id 0, address_left1) into a buffer
+    // nothing reads -- a whole 240x400 decode-and-convert per frame,
+    // thrown away. Skip it unless 3D is actually on.
+    const bool want_right_eye = Settings::values.factor_3d.GetValue() > 0 &&
+                                !Settings::values.disable_right_eye_render.GetValue();
     for (u32 i = 0; i < 3; i++) {
+        if (i == 1 && !want_right_eye) {
+            continue;
+        }
         const u32 fb_id = i == 2 ? 1 : 0;
 
         const auto color_fill = fb_id == 0 ? regs_lcd.color_fill_top : regs_lcd.color_fill_bottom;

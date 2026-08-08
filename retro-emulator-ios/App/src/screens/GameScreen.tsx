@@ -111,6 +111,10 @@ export default function GameScreen({
         setDesc(d);
         setStatus("running");
         statesWork.current = !(d.screenCount === 2 && d.width > 256);
+        // Cores without the knob just return false; nothing to handle.
+        if (settings.cpuClock !== 100) {
+          EmuCore.setOption("cpu_clock", settings.cpuClock);
+        }
         // Auto-resume: offer the snapshot taken when the game was last
         // left. The in-game save (battery) is untouched either way.
         const autoPath = autoStatePathFor(rom.name);

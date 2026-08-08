@@ -186,6 +186,19 @@ typedef struct EmuCoreApi {
      * emulation thread or while stopped.
      */
     const char *(*diagnostics)(EmuCore *core);
+
+    /*
+     * OPTIONAL (may be NULL). Integer tuning knobs, by name, so a core
+     * can expose speed/accuracy trade-offs without growing this vtable
+     * per knob or teaching the shell about any one system.
+     * Unknown keys return EMU_ERR_UNSUPPORTED and change nothing.
+     *
+     * Keys in use:
+     *   "cpu_clock"  5..400  guest CPU clock, percent of hardware.
+     *                        Below 100 trades emulation accuracy for
+     *                        frame rate; some titles misbehave.
+     */
+    EmuStatus (*set_option)(EmuCore *core, const char *key, int32_t value);
 } EmuCoreApi;
 
 #ifdef __cplusplus

@@ -450,6 +450,16 @@ final class EmuSession: NSObject {
 
   // MARK: - Diagnostics / lifecycle
 
+  /// Integer tuning knob by name. False if the core has no set_option
+  /// or doesn't know the key -- the caller decides whether that matters.
+  @discardableResult
+  func setOption(_ key: String, _ value: Int) -> Bool {
+    guard let api, let core, let setOption = api.pointee.set_option else {
+      return false
+    }
+    return key.withCString { setOption(core, $0, Int32(value)) == EMU_OK }
+  }
+
   func diagnostics() -> [String: Any] {
     // The core's own report is what distinguishes "emulating slowly" from
     // "not emulating at all" -- both look like a frame rate from here.

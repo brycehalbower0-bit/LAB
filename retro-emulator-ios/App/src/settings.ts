@@ -25,12 +25,19 @@ export interface Settings {
    * reads as uneven edges. "smooth" is linear: even, slightly soft.
    */
   videoFilter: VideoFilter;
+  /**
+   * Guest CPU clock as a percent of real hardware. Below 100 buys frame
+   * rate by giving the interpreter less to emulate; games that depend on
+   * CPU timing can stutter, run their logic slowly, or misbehave.
+   */
+  cpuClock: number;
 }
 
 export const DEFAULTS: Settings = {
   controlOpacity: 0.55,
   overlayControls: true,
   videoFilter: "smooth",
+  cpuClock: 100,
 };
 
 const file = new File(documentsRoot, "settings.json");
@@ -55,6 +62,10 @@ function sanitize(raw: unknown): Settings {
       o.videoFilter === "sharp" || o.videoFilter === "smooth"
         ? o.videoFilter
         : DEFAULTS.videoFilter,
+    cpuClock:
+      typeof o.cpuClock === "number" && Number.isFinite(o.cpuClock)
+        ? clamp(Math.round(o.cpuClock), 25, 200)
+        : DEFAULTS.cpuClock,
   };
 }
 

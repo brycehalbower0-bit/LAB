@@ -35,6 +35,8 @@ interface EmuCoreModule {
   unload(): Promise<void>;
   setInput(mask: number): void;
   setFastForward(multiplier: number): void;
+  /** Integer core knob by name; false if unsupported. See core_api.h. */
+  setOption(key: string, value: number): boolean;
   setTouch(x: number, y: number, down: boolean): void;
   /** Circle pad axes, each -1..1 (3DS). */
   setAnalog(x: number, y: number): void;
