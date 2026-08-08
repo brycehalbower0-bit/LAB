@@ -121,10 +121,19 @@ export default function LibraryScreen({
           if (found === 0) {
             notes.push(`${asset.name}: no supported ROM inside the zip.`);
           }
+        } else if (/\.(7z|rar)$/i.test(asset.name)) {
+          // LZMA (7z) and RAR need heavyweight decoders; on-device they
+          // would take far longer than extracting on a computer.
+          notes.push(
+            `${asset.name} is a ${asset.name.split(".").pop()!.toUpperCase()} ` +
+              `archive, which this app can't open. Extract it on a ` +
+              `computer (7-Zip / The Unarchiver), then bring over the ` +
+              `.3ds file itself.`,
+          );
         } else if (!ROM_RE.test(asset.name)) {
           notes.push(
             `${asset.name}: unsupported type. Use .gba, .nds, or ` +
-              `.3ds/.cci/.cxi/.3dsx.`,
+              `.3ds/.cci/.cxi/.3dsx (zip and tar/gz archives also work).`,
           );
         } else {
           const dest = new File(romsDir, asset.name);
