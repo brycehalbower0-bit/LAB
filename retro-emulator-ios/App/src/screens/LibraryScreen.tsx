@@ -4,18 +4,19 @@
 // ARM11 benchmark, still needed for the ADR 0002 floor-device run).
 
 import * as DocumentPicker from "expo-document-picker";
-import { File } from "expo-file-system";
+import { File, Paths } from "expo-file-system";
 import { unzipSync } from "fflate";
 import { useCallback, useEffect, useState } from "react";
 import {
   Alert,
+  AppState,
   FlatList,
   Pressable,
   StyleSheet,
   Text,
   View,
 } from "react-native";
-import { extractRomArchive, isArchive } from "../archive";
+import { copyLarge, extractRomArchive, isArchive } from "../archive";
 import { documentsRoot, ensureDirs, romsDir } from "../paths";
 
 const ROM_RE = /\.(gba|nds|3ds|cci|cxi|3dsx|app|elf)$/i;
@@ -63,6 +64,16 @@ export default function LibraryScreen({
   }, []);
 
   useEffect(refresh, [refresh]);
+
+  // Dropping a multi-GB dump into the EmuLab folder in Files is the only
+  // import path that costs nothing (a move inside the sandbox volume is
+  // a rename). Rescan on foreground so coming back from Files is enough.
+  useEffect(() => {
+    const sub = AppState.addEventListener("change", (state) => {
+      if (state === "active") refresh();
+    });
+    return () => sub.remove();
+  }, [refresh]);
 
   async function importRom() {
     // copyToCacheDirectory duplicates the file before we even see it —
@@ -136,14 +147,38 @@ export default function LibraryScreen({
               `.3ds/.cci/.cxi/.3dsx (zip and tar/gz archives also work).`,
           );
         } else {
-          const dest = new File(romsDir, asset.name);
-          if (dest.exists) dest.delete();
-          source.copy(dest);
-          if (!dest.exists) {
-            notes.push(`${asset.name}: copy failed (${sizeMB} MB).`);
-          } else {
-            imported.push(asset.name);
+          // Importing duplicates the file into the sandbox, so a 2 GB 3DS
+          // dump needs 2 GB free on top of the copy already in Files.
+          // Check first and say so, rather than failing after minutes.
+          const need = asset.size ?? 0;
+          const free = Paths.availableDiskSpace;
+          if (need > 0 && free > 0 && free < need + 200 * 1048576) {
+            notes.push(
+              `${asset.name} (${sizeMB} MB) needs ${sizeMB} MB free but ` +
+                `only ${(free / 1048576).toFixed(0)} MB is available. ` +
+                `Move it into the EmuLab folder in Files instead — that ` +
+                `costs no extra space.`,
+            );
+            continue;
           }
+          const dest = new File(romsDir, asset.name);
+          try {
+            await copyLarge(source, dest, (p) => {
+              const pct = p.totalBytes
+                ? Math.round((p.readBytes / p.totalBytes) * 100)
+                : 0;
+              setBusy(`Copying ${asset.name} — ${pct}%`);
+            });
+          } catch (e) {
+            setBusy(null);
+            notes.push(
+              `${asset.name} (${sizeMB} MB) could not be copied: ${e}. ` +
+                `Move it into the EmuLab folder in Files instead.`,
+            );
+            continue;
+          }
+          setBusy(null);
+          imported.push(asset.name);
         }
       }
       refresh();
@@ -158,13 +193,12 @@ export default function LibraryScreen({
             (notes.length ? NL + NL + notes.join(NL) : ""),
         );
       } else {
+        // No decryption boilerplate here: import never inspects contents,
+        // so appending it made every failure read as an encryption verdict.
+        // That guidance belongs where a load actually fails.
         Alert.alert(
           "Nothing imported",
-          (notes.length ? notes.join(NL + NL) : "No supported ROM found.") +
-            NL +
-            NL +
-            "3DS dumps must already be decrypted: this app never handles " +
-            "console keys.",
+          notes.length ? notes.join(NL + NL) : "No supported ROM found.",
         );
       }
     } catch (e) {
