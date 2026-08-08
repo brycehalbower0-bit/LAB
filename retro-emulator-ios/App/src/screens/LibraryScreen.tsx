@@ -15,6 +15,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { extractRomArchive, isArchive } from "../archive";
 import { documentsRoot, ensureDirs, romsDir } from "../paths";
 
 const ROM_RE = /\.(gba|nds|3ds|cci|cxi|3dsx|app|elf)$/i;
@@ -32,6 +33,7 @@ export default function LibraryScreen({
   onOpenRom: (rom: RomEntry) => void;
 }) {
   const [roms, setRoms] = useState<RomEntry[]>([]);
+  const [busy, setBusy] = useState<string | null>(null);
 
   const refresh = useCallback(() => {
     ensureDirs();
@@ -78,7 +80,24 @@ export default function LibraryScreen({
         const source = new File(asset.uri);
         const sizeMB = ((asset.size ?? 0) / 1048576).toFixed(0);
 
-        if (asset.name.toLowerCase().endsWith(".zip")) {
+        if (isArchive(asset.name)) {
+          // tar/gzip archives stream: no size limit, bounded memory.
+          const names = await extractRomArchive(source, romsDir, (p) => {
+            const pct = p.totalBytes
+              ? Math.round((p.readBytes / p.totalBytes) * 100)
+              : 0;
+            setBusy(
+              `Extracting ${asset.name} — ${pct}%` +
+                (p.current ? ` (${p.current})` : ""),
+            );
+          });
+          setBusy(null);
+          if (names.length === 0) {
+            notes.push(`${asset.name}: no supported ROM inside the archive.`);
+          } else {
+            imported.push(...names);
+          }
+        } else if (asset.name.toLowerCase().endsWith(".zip")) {
           // Unzipping needs the whole archive in memory; fine for GBA/DS,
           // impossible for a multi-GB 3DS dump.
           if ((asset.size ?? 0) > 600 * 1048576) {
@@ -140,6 +159,7 @@ export default function LibraryScreen({
         );
       }
     } catch (e) {
+      setBusy(null);
       Alert.alert("Import failed", String(e));
     }
   }
@@ -155,8 +175,12 @@ export default function LibraryScreen({
           : `${roms.length} game${roms.length === 1 ? "" : "s"}`}
       </Text>
 
-      <Pressable style={styles.importButton} onPress={importRom}>
-        <Text style={styles.buttonText}>Import ROM</Text>
+      <Pressable
+        style={[styles.importButton, busy !== null && styles.importBusy]}
+        onPress={importRom}
+        disabled={busy !== null}
+      >
+        <Text style={styles.buttonText}>{busy ?? "Import ROM"}</Text>
       </Pressable>
 
       <FlatList
@@ -184,6 +208,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 16,
   },
+  importBusy: { backgroundColor: "#374151" },
   buttonText: { color: "#fff", fontSize: 16, fontWeight: "600" },
   list: { marginTop: 16 },
   romRow: {
