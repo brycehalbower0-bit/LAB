@@ -112,6 +112,26 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      # The canonical core trees are pristine upstream snapshots, so every
+      # file in them must be committed. The repo's own ignore rules do not
+      # know that: patterns meant for our build output (build/, *.P*) reach
+      # into the vendored trees and silently drop upstream sources, which
+      # then exist locally, get synced, and vanish on a fresh checkout --
+      # surfacing as unexplained drift rather than a missing file. Files
+      # under an ignored directory cannot be re-included by a negation, so
+      # they are force-added; this check is what makes that visible.
+      - name: No ignored files in the canonical core trees
+        working-directory: .
+        run: |
+          leaked=$(git ls-files --others --ignored --exclude-standard \
+            -- retro-emulator-ios/Cores/ retro-emulator-ios/Spikes/)
+          if [ -n "$leaked" ]; then
+            echo "Ignored-but-present files in a vendored tree:"
+            echo "$leaked"
+            echo "Commit them with: git add -f <paths>"
+            exit 1
+          fi
+
       # The native modules carry vendored copies of canonical sources
       # (Spikes/arm11-interp, Cores/Shared, Tests/CoreTests); fail if
       # someone edited one side without re-syncing.
