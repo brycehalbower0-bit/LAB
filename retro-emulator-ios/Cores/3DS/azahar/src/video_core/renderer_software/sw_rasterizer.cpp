@@ -583,8 +583,18 @@ std::array<Common::Vec4<u8>, 4> RasterizerSoftware::TextureColor(
             const u8* texture_data = memory.GetPhysicalPointer(texture_address);
             const auto info = TextureInfo::FromPicaRegister(texture.config, texture.format);
 
-            // TODO: Apply the min and mag filters to the texture
-            texture_color[i] = LookupTexture(texture_data, s, t, info);
+            // A guest can point a texture at an unmapped physical
+            // address; GetPhysicalPointer then returns null and
+            // LookupTexture dereferences it on a worker thread. Observed
+            // as SIGSEGV in LookupTexelInTile. Sample transparent black
+            // instead -- a wrong texel beats taking the process down.
+            if (texture_data == nullptr ||
+                !memory.IsValidPhysicalAddress(texture_address)) {
+                texture_color[i] = Common::Vec4<u8>{0, 0, 0, 0};
+            } else {
+                // TODO: Apply the min and mag filters to the texture
+                texture_color[i] = LookupTexture(texture_data, s, t, info);
+            }
         }
 
         if (i == 0 && (texture.config.type == TexturingRegs::TextureConfig::Shadow2D ||

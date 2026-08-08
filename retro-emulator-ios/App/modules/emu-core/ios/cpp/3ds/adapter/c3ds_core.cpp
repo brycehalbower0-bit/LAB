@@ -18,6 +18,7 @@
 #include <atomic>
 #include <chrono>
 #include <cstdio>
+#include <thread>
 #include <exception>
 #include <typeinfo>
 #include <cstring>
@@ -63,6 +64,44 @@ namespace {
 
 constexpr uint32_t kTopW = 400, kTopH = 240;
 constexpr uint32_t kBotW = 320, kBotH = 240;
+
+// Gate between the realtime audio thread and teardown.
+//
+// audio_open is the permission to touch Core::System; audio_readers
+// counts callbacks currently inside. Closing the gate and then waiting
+// for the count to reach zero is what makes shutdown safe, and it costs
+// the audio thread two relaxed atomics -- no lock, no allocation, so it
+// stays callable from a realtime context.
+std::atomic<bool> g_audio_open{false};
+std::atomic<int> g_audio_readers{0};
+
+struct AudioGate {
+    bool entered = false;
+    AudioGate() {
+        g_audio_readers.fetch_add(1, std::memory_order_acquire);
+        if (g_audio_open.load(std::memory_order_acquire)) {
+            entered = true;
+        } else {
+            g_audio_readers.fetch_sub(1, std::memory_order_release);
+        }
+    }
+    ~AudioGate() {
+        if (entered) {
+            g_audio_readers.fetch_sub(1, std::memory_order_release);
+        }
+    }
+};
+
+// Close the gate and wait for in-flight callbacks. Called before any
+// teardown that can invalidate what the audio thread reads.
+void close_audio_gate() {
+    g_audio_open.store(false, std::memory_order_release);
+    for (int spins = 0;
+         g_audio_readers.load(std::memory_order_acquire) > 0 && spins < 10000;
+         spins++) {
+        std::this_thread::sleep_for(std::chrono::microseconds(100));
+    }
+}
 
 uint64_t now_ns() {
     return (uint64_t)std::chrono::duration_cast<std::chrono::nanoseconds>(
@@ -208,7 +247,9 @@ void c3ds_destroy(EmuCore *core) {
     if (!core) {
         return;
     }
-    if (core->loaded && sys().IsPoweredOn()) {
+    close_audio_gate();
+    core->loaded = false;
+    if (sys().IsPoweredOn()) {
         sys().Shutdown();
     }
     if (!core->temp_rom_path.empty()) {
@@ -354,6 +395,7 @@ EmuStatus c3ds_load_rom_path(EmuCore *core, const char *path) {
         return map_load_result(result);
     }
     core->loaded = true;
+    g_audio_open.store(true, std::memory_order_release);
     return EMU_OK;
 }
 
@@ -618,14 +660,28 @@ void c3ds_get_video(const EmuCore *core_c, uint32_t screen,
 }
 
 uint32_t c3ds_read_audio(EmuCore *core, int16_t *out, uint32_t max_frames) {
-    if (!core->loaded || max_frames == 0) {
+    (void)core;
+    if (max_frames == 0) {
         return 0;
+    }
+    // Runs on the realtime audio thread, which outlives nothing and
+    // waits for nothing -- it kept calling into Core::System while the
+    // main thread tore it down, and dereferenced a destroyed DSP
+    // (SIGSEGV at 0x8 inside DspInterface::OutputCallback).
+    //
+    // `loaded` alone is not enough: it is a plain bool on another
+    // thread, and clearing it does not wait for a callback already
+    // inside. Take a reader slot, re-check under it, and have shutdown
+    // close the gate then drain.
+    AudioGate gate;
+    if (!gate.entered) {
+        std::memset(out, 0, (size_t)max_frames * 2 * sizeof(int16_t));
+        return max_frames; // silence, not underrun
     }
     // The ABI pulls audio; Citra's sinks push. OutputCallback is the
     // entry point a Sink would call (time-stretch + mix), so we call it
     // directly and keep SinkType::Null installed so nothing competes
-    // for the DSP output. Runs on the realtime audio thread, matching
-    // where a sink's callback would run.
+    // for the DSP output.
     sys().DSP().OutputCallback(out, max_frames);
     return max_frames;
 }
