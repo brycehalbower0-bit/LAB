@@ -1,0 +1,409 @@
+{
+  "$schema_version": 1,
+  "language_version": 1,
+  "_comment": "Seed function definitions. Bodies are ASTs; see data/README.md for the node schema and docs/02-language-specification.md for the type rules. Every literal that sits in a socket carries that socket's id.",
+  "functions": [
+    {
+      "id": "slash",
+      "display_name": "slash",
+      "status": "starter",
+      "base_mana": 2,
+      "windup_frames": 6,
+      "cooldown_frames": 18,
+      "memory": 4,
+      "sockets": [
+        {
+          "id": "range_threshold",
+          "accepts": "NUMBER",
+          "field": "range",
+          "default": 3,
+          "min": 0,
+          "max": 20,
+          "edit_level": "EDIT_VALUE",
+          "label": "reach"
+        },
+        {
+          "id": "damage_min",
+          "accepts": "NUMBER",
+          "field": "damage",
+          "default": 1,
+          "min": 0,
+          "max": 999,
+          "edit_level": "EDIT_VALUE",
+          "label": "damage floor"
+        },
+        {
+          "id": "damage_max",
+          "accepts": "NUMBER",
+          "field": "damage",
+          "default": 2,
+          "min": 0,
+          "max": 999,
+          "edit_level": "EDIT_VALUE",
+          "label": "damage ceiling"
+        },
+        {
+          "id": "element",
+          "accepts": "ELEMENT",
+          "field": "element",
+          "default": "physical",
+          "edit_level": "EDIT_TOKEN",
+          "label": "damage type",
+          "status": "post_mvp"
+        }
+      ],
+      "cost_curves": {
+        "range_threshold": [0, 0, 0, 0, 1, 1, 2, 2, 3, 4, 5],
+        "damage_max": [0, 0, 0, 1, 1, 2, 3, 3, 4, 5, 6]
+      },
+      "body": [
+        {
+          "node": "IF",
+          "condition": {
+            "node": "BINARY_OP",
+            "op": "OP_LTE",
+            "left": { "node": "QUERY", "reference": "REF_ENEMY", "property": "PROP_RANGE" },
+            "right": { "node": "LITERAL", "value": 3, "socket": "range_threshold" }
+          },
+          "then": [
+            {
+              "node": "ACTION",
+              "action": "ACTION_DEAL_DAMAGE",
+              "operands": [
+                { "node": "LITERAL", "value": 1, "socket": "damage_min" },
+                { "node": "LITERAL", "value": 2, "socket": "damage_max" }
+              ]
+            }
+          ],
+          "else": null
+        }
+      ]
+    },
+    {
+      "id": "spark",
+      "display_name": "spark",
+      "status": "starter",
+      "base_mana": 1,
+      "windup_frames": 3,
+      "cooldown_frames": 10,
+      "memory": 1,
+      "sockets": [
+        {
+          "id": "direction",
+          "accepts": "DIRECTION",
+          "field": "direction",
+          "default": "toward mouse",
+          "edit_level": "EDIT_TOKEN",
+          "label": "aim"
+        },
+        {
+          "id": "damage_min",
+          "accepts": "NUMBER",
+          "field": "damage",
+          "default": 1,
+          "min": 0,
+          "max": 999,
+          "edit_level": "EDIT_VALUE",
+          "label": "damage floor"
+        },
+        {
+          "id": "damage_max",
+          "accepts": "NUMBER",
+          "field": "damage",
+          "default": 2,
+          "min": 0,
+          "max": 999,
+          "edit_level": "EDIT_VALUE",
+          "label": "damage ceiling"
+        }
+      ],
+      "body": [
+        {
+          "node": "ACTION",
+          "action": "ACTION_SPARK",
+          "operands": [
+            {
+              "node": "DIRECTION",
+              "kind": "TOWARD",
+              "target": { "node": "REFERENCE", "reference": "REF_MOUSE" },
+              "socket": "direction"
+            },
+            { "node": "LITERAL", "value": 1, "socket": "damage_min" },
+            { "node": "LITERAL", "value": 2, "socket": "damage_max" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "move",
+      "display_name": "move",
+      "status": "firmware",
+      "base_mana": 0,
+      "memory": 1,
+      "_comment": "Movement firmware. One definition, cloned per direction binding. The direction socket is what makes the cursor-movement aha moment cost two tokens instead of four rewrites.",
+      "sockets": [
+        {
+          "id": "direction",
+          "accepts": "DIRECTION",
+          "field": "direction",
+          "default": "up",
+          "edit_level": "EDIT_TOKEN",
+          "label": "heading",
+          "unlocked_at": "biome_1_late"
+        }
+      ],
+      "body": [
+        {
+          "node": "ACTION",
+          "action": "ACTION_MOVE",
+          "operands": [
+            { "node": "DIRECTION", "kind": "FIXED", "value": "up", "socket": "direction" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "bolt",
+      "display_name": "bolt",
+      "status": "planned",
+      "base_mana": 3,
+      "windup_frames": 10,
+      "cooldown_frames": 26,
+      "memory": 1,
+      "sockets": [
+        {
+          "id": "direction",
+          "accepts": "DIRECTION",
+          "field": "direction",
+          "default": "toward mouse",
+          "edit_level": "EDIT_TOKEN",
+          "label": "aim"
+        },
+        {
+          "id": "damage_min",
+          "accepts": "NUMBER",
+          "field": "damage",
+          "default": 2,
+          "min": 0,
+          "max": 999,
+          "edit_level": "EDIT_VALUE",
+          "label": "damage floor"
+        },
+        {
+          "id": "damage_max",
+          "accepts": "NUMBER",
+          "field": "damage",
+          "default": 5,
+          "min": 0,
+          "max": 999,
+          "edit_level": "EDIT_VALUE",
+          "label": "damage ceiling"
+        },
+        {
+          "id": "count",
+          "accepts": "NUMBER",
+          "field": "count",
+          "default": 1,
+          "min": 1,
+          "max": 20,
+          "edit_level": "EDIT_VALUE",
+          "label": "projectiles"
+        }
+      ],
+      "body": [
+        {
+          "node": "ACTION",
+          "action": "ACTION_BOLT",
+          "operands": [
+            {
+              "node": "DIRECTION",
+              "kind": "TOWARD",
+              "target": { "node": "REFERENCE", "reference": "REF_MOUSE" },
+              "socket": "direction"
+            },
+            { "node": "LITERAL", "value": 2, "socket": "damage_min" },
+            { "node": "LITERAL", "value": 5, "socket": "damage_max" },
+            { "node": "LITERAL", "value": 1, "socket": "count" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "blink",
+      "display_name": "blink",
+      "status": "planned",
+      "base_mana": 4,
+      "windup_frames": 2,
+      "cooldown_frames": 90,
+      "memory": 1,
+      "_comment": "Long cooldown on purpose. A loop cannot bypass it: a blocked action costs one cycle and the loop continues.",
+      "sockets": [
+        {
+          "id": "direction",
+          "accepts": "DIRECTION",
+          "field": "direction",
+          "default": "toward mouse",
+          "edit_level": "EDIT_TOKEN",
+          "label": "heading"
+        },
+        {
+          "id": "distance",
+          "accepts": "NUMBER",
+          "field": "distance",
+          "default": 5,
+          "min": 0,
+          "max": 30,
+          "edit_level": "EDIT_VALUE",
+          "label": "distance"
+        }
+      ],
+      "body": [
+        {
+          "node": "ACTION",
+          "action": "ACTION_BLINK",
+          "operands": [
+            {
+              "node": "DIRECTION",
+              "kind": "TOWARD",
+              "target": { "node": "REFERENCE", "reference": "REF_MOUSE" },
+              "socket": "direction"
+            },
+            { "node": "LITERAL", "value": 5, "socket": "distance" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "shield",
+      "display_name": "shield",
+      "status": "planned",
+      "base_mana": 4,
+      "windup_frames": 4,
+      "cooldown_frames": 120,
+      "memory": 1,
+      "sockets": [
+        {
+          "id": "amount",
+          "accepts": "NUMBER",
+          "field": "damage",
+          "default": 6,
+          "min": 0,
+          "max": 999,
+          "edit_level": "EDIT_VALUE",
+          "label": "absorbed"
+        },
+        {
+          "id": "duration",
+          "accepts": "NUMBER",
+          "field": "duration",
+          "default": 2,
+          "min": 0,
+          "max": 5,
+          "edit_level": "EDIT_VALUE",
+          "label": "seconds"
+        }
+      ],
+      "body": [
+        {
+          "node": "ACTION",
+          "action": "ACTION_SHIELD",
+          "operands": [
+            { "node": "LITERAL", "value": 6, "socket": "amount" },
+            { "node": "LITERAL", "value": 2, "socket": "duration" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "push",
+      "display_name": "push",
+      "status": "planned",
+      "base_mana": 3,
+      "windup_frames": 8,
+      "cooldown_frames": 40,
+      "memory": 1,
+      "sockets": [
+        {
+          "id": "target",
+          "accepts": "ENTITY",
+          "field": "target",
+          "default": "enemy",
+          "edit_level": "EDIT_TOKEN",
+          "label": "target"
+        },
+        {
+          "id": "force",
+          "accepts": "NUMBER",
+          "field": "distance",
+          "default": 4,
+          "min": 0,
+          "max": 30,
+          "edit_level": "EDIT_VALUE",
+          "label": "force"
+        }
+      ],
+      "body": [
+        {
+          "node": "ACTION",
+          "action": "ACTION_PUSH",
+          "operands": [
+            { "node": "REFERENCE", "reference": "REF_ENEMY", "socket": "target" },
+            { "node": "LITERAL", "value": 4, "socket": "force" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "skeleton_reactive",
+      "display_name": "???",
+      "status": "planned",
+      "_comment": "A spell skeleton: a loot function with unfilled sockets. The on-ramp to authorship, and it should appear well before Blank Function Cores do.",
+      "base_mana": 0,
+      "memory": 3,
+      "sockets": [
+        {
+          "id": "target",
+          "accepts": "ENTITY",
+          "field": "target",
+          "default": null,
+          "edit_level": "EDIT_TOKEN",
+          "label": "TARGET"
+        },
+        {
+          "id": "threshold",
+          "accepts": "NUMBER",
+          "field": "range",
+          "default": null,
+          "min": 0,
+          "max": 20,
+          "edit_level": "EDIT_VALUE",
+          "label": "NUMBER"
+        },
+        {
+          "id": "body_statement",
+          "accepts": "STATEMENT",
+          "default": null,
+          "edit_level": "EDIT_STATEMENT_INS",
+          "label": "ACTION"
+        }
+      ],
+      "body": [
+        {
+          "node": "IF",
+          "condition": {
+            "node": "BINARY_OP",
+            "op": "OP_LTE",
+            "left": {
+              "node": "QUERY",
+              "reference": { "node": "EMPTY", "socket": "target" },
+              "property": "PROP_RANGE"
+            },
+            "right": { "node": "EMPTY", "socket": "threshold" }
+          },
+          "then": [{ "node": "EMPTY", "socket": "body_statement" }],
+          "else": null
+        }
+      ]
+    }
+  ]
+}

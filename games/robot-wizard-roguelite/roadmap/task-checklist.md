@@ -1,0 +1,165 @@
+# Task Checklist — the first 150
+
+In order. Tasks 1–50 take the project to its first playtest; 51–100 to a playable run; 101–150
+to the vertical-slice playtest.
+
+---
+
+## 1–50 — To the first playtest
+
+- [ ] 1. Create the GameMaker project.
+- [ ] 2. Establish the source-control repository.
+- [ ] 3. Choose a temporary internal resolution.
+- [ ] 4. Create the player object.
+- [ ] 5. Implement top-down movement.
+- [ ] 6. Implement the camera.
+- [ ] 7. Implement the world cursor.
+- [ ] 8. Create the slash hitbox.
+- [ ] 9. Add a damageable dummy.
+- [ ] 10. Add a placeholder casting animation.
+- [ ] 11. Create the logical input manager.
+- [ ] 12. Bind Space to slash.
+- [ ] 13. Define the function data structure.
+- [ ] 14. Define the AST base node format.
+- [ ] 15. Represent `slash()` as an AST.
+- [ ] 16. Implement the number literal node.
+- [ ] 17. Implement the range query node.
+- [ ] 18. Implement the comparison node.
+- [ ] 19. Implement the `if` node.
+- [ ] 20. Implement the damage action node.
+- [ ] 21. Create the interpreter for those nodes.
+- [ ] 22. Confirm the starter slash executes.
+- [ ] 23. Create the token definition struct.
+- [ ] 24. Create the `8` token.
+- [ ] 25. Create the token inventory.
+- [ ] 26. Create a basic Spell Matrix room/UI.
+- [ ] 27. Render `slash()` as editable code.
+- [ ] 28. Mark the `2` as an editable socket.
+- [ ] 29. Implement dragging the `8`.
+- [ ] 30. Implement socket compatibility checking.
+- [ ] 31. Replace the AST literal on drop.
+- [ ] 32. Recompile `slash()`.
+- [ ] 33. Display the damage change.
+- [ ] 34. Add undo.
+- [ ] 35. Add token tooltips.
+- [ ] 36. Implement the move action node.
+- [ ] 37. Implement direction constants.
+- [ ] 38. Represent W movement as a function/binding.
+- [ ] 39. Create the `mouse` reference node.
+- [ ] 40. Create the `toward` transform.
+- [ ] 41. Add the `mouse` token.
+- [ ] 42. Add the `toward` token.
+- [ ] 43. Allow W's movement to be modified.
+- [ ] 44. Test `W → move toward mouse`.
+- [ ] 45. Add A/S/D bindings.
+- [ ] 46. Add the LMB binding.
+- [ ] 47. Add the `bolt` function.
+- [ ] 48. Add the first real enemy.
+- [ ] 49. Add room clear.
+- [ ] 50. **Conduct the first playtest.**
+
+## 51–100 — To a playable run
+
+- [ ] 51. Add the token reward screen.
+- [ ] 52. Add three-choice rewards.
+- [ ] 53. Add seeded RNG.
+- [ ] 54. Add the chaser enemy.
+- [ ] 55. Add the turret enemy.
+- [ ] 56. Add projectiles.
+- [ ] 57. Add the charger enemy.
+- [ ] 58. Add player health.
+- [ ] 59. Add mana.
+- [ ] 60. Add death/restart.
+- [ ] 61. Add the room sequence.
+- [ ] 62. Add reward weighting.
+- [ ] 63. Add digit tokens `0`–`9`.
+- [ ] 64. Add `<`.
+- [ ] 65. Add `>`.
+- [ ] 66. Add `<=`.
+- [ ] 67. Add `>=`.
+- [ ] 68. Add `==`.
+- [ ] 69. Add the `enemy` reference.
+- [ ] 70. Add nearest-enemy resolution.
+- [ ] 71. Add range queries.
+- [ ] 72. Add condition editing.
+- [ ] 73. Add statement sockets.
+- [ ] 74. Add memory calculation.
+- [ ] 75. Add the memory UI.
+- [ ] 76. Add `blink`.
+- [ ] 77. Add `shield`.
+- [ ] 78. Add `push`.
+- [ ] 79. Add spell cost calculation.
+- [ ] 80. Add the cost preview.
+- [ ] 81. Add compile errors.
+- [ ] 82. Add invalid-drop feedback.
+- [ ] 83. Add function reset.
+- [ ] 84. Add Emergency Controls.
+- [ ] 85. Add the Test Chamber.
+- [ ] 86. Add target dummy controls.
+- [ ] 87. Add the projectile test emitter.
+- [ ] 88. Add the function inventory.
+- [ ] 89. Add binding reassignment.
+- [ ] 90. Add RMB.
+- [ ] 91. Add the input slot UI.
+- [ ] 92. Add the shop.
+- [ ] 93. Add currency.
+- [ ] 94. Add the elite room.
+- [ ] 95. Add the first elite.
+- [ ] 96. Add a basic run map.
+- [ ] 97. Add pause/settings.
+- [ ] 98. Add the save system skeleton.
+- [ ] 99. Add run serialization.
+- [ ] 100. **Conduct a 10-run internal test.**
+
+## 101–150 — To the vertical slice
+
+- [ ] 101. Add statement movement.
+- [ ] 102. Add statement insertion.
+- [ ] 103. Add statement deletion rules.
+- [ ] 104. Add the decompile mechanic.
+- [ ] 105. Add the embedded-token ownership distinction.
+- [ ] 106. Add token extraction.
+- [ ] 107. Add function cloning.
+- [ ] 108. Add the Blank Function Core.
+- [ ] 109. Add the custom function UI.
+- [ ] 110. Add safe custom-function naming.
+- [ ] 111. Add the function call node.
+- [ ] 112. Add recursion detection.
+- [ ] 113. Add custom function binding.
+- [ ] 114. Add `else`.
+- [ ] 115. Add `and`.
+- [ ] 116. Add `or`.
+- [ ] 117. Add arithmetic `+`.
+- [ ] 118. Add arithmetic `-`.
+- [ ] 119. Add arithmetic `*`.
+- [ ] 120. Add arithmetic `/`.
+- [ ] 121. Add divide-by-zero validation.
+- [ ] 122. Add digit joining.
+- [ ] 123. Add multi-digit values.
+- [ ] 124. Add numeric semantic caps.
+- [ ] 125. Add `repeat`.
+- [ ] 126. Add the cycle budget.
+- [ ] 127. Add the cycle UI.
+- [ ] 128. Add action scheduling.
+- [ ] 129. Add the execution instance (fiber).
+- [ ] 130. Stress-test repeated attacks.
+- [ ] 131. Add `wait` if needed.
+- [ ] 132. Prototype `while`.
+- [ ] 133. Add `while` validation.
+- [ ] 134. Add loop cycle exhaustion.
+- [ ] 135. Add loop debug highlighting.
+- [ ] 136. Add the mythic rarity tier.
+- [ ] 137. Add the special `while` pickup presentation.
+- [ ] 138. Add the codex entry system.
+- [ ] 139. Add the Firewall boss.
+- [ ] 140. Add the boss reward.
+- [ ] 141. Add biome tiles.
+- [ ] 142. Finalise the robot wizard concept.
+- [ ] 143. Produce the player sprite sheet.
+- [ ] 144. Produce final art for the first enemy.
+- [ ] 145. Produce token rune art.
+- [ ] 146. Produce Spell Matrix UI art.
+- [ ] 147. Add the compile animation.
+- [ ] 148. Add the pickup animation.
+- [ ] 149. Add core SFX.
+- [ ] 150. **External vertical-slice playtest.**
